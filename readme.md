@@ -34,18 +34,21 @@ Crafted solo by [Aymen27k](https://github.com/Aymen27k), this project marks the 
 4. Run the game:
    python main.py
 
-🎵 Assets
+## 🎵 Assets
 
-- \*\*Music and sound effects sourced from Pixabay.
-- \*\*All assets are royalty-free and safe to include under the Pixabay license.
+- **Music and sound effects** sourced from Pixabay
+- **All assets are royalty-free** and safe to include under the Pixabay license
 
+## 📁 Project Structure
+
+```text
 snake_pygame/
-├── assets/ # Music and sound files
-├── .vscode/ # Editor settings
+├── assets/              # Music and sound files
+├── .vscode/             # Editor settings
 ├── .gitignore
 ├── requirements.txt
 ├── highscore.json
-├── main.py # Game loop and state manager
+├── main.py              # Game loop and state manager
 ├── background.py
 ├── food.py
 ├── musicmanager.py
@@ -55,7 +58,10 @@ snake_pygame/
 ├── sprite.py
 └── walls.py
 
-🏆 Credits
-Developed by Aymen Kalai Ezar
-Music & SFX: Pixabay
-Engine: Pygame
+```
+
+## 🏆 Credits
+
+- **Developed by** Aymen Kalai Ezar
+- **Music & SFX**: [Pixabay](https://pixabay.com/)
+- **Engine**: [Pygame](https://www.pygame.org/)
