@@ -4,9 +4,10 @@ import pygame
 
 
 class Scoreboard:
-    def __init__(self, screen_width, screen_height, font_size=30):
+    def __init__(self, screen_width, screen_height, game_mode = None, font_size=30):
         self.score = 0
-        self.high_score = self.load_high_score()
+        self.game_mode = game_mode
+        self.high_score = self.load_high_score(self.game_mode)
         self.font = pygame.font.SysFont("Arial", font_size, bold=True)
         self.color = (255, 255, 255)  # white
         self.position = (250, 30)      # top-left corner
@@ -18,6 +19,10 @@ class Scoreboard:
 
     def reset(self):
         self.score = 0
+
+    def set_mode(self, game_mode):
+        self.game_mode = game_mode
+        self.high_score = self.load_high_score(game_mode)
 
     def draw(self, screen, snake):
         # Draw score + high score
@@ -41,17 +46,29 @@ class Scoreboard:
 
 
 
-    def save_high_score(self, score, filename="highscore.json"):
-        if self.score > self.high_score:
-            data = {"high_score": score}
+    def save_high_score(self, score, game_mode, filename="highscore.json"):
+        try:
+            # Load existing scores
+            with open(filename, "r", encoding="UTF-8") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {}
+
+        # Update only the relevant mode
+        current_high = data.get(game_mode, 0)
+        if score > current_high:
+            data[game_mode] = score
             with open(filename, "w", encoding="UTF-8") as f:
-                json.dump(data, f)
+                json.dump(data, f, indent=4)
             self.high_score = score
-    def load_high_score(self, filename="highscore.json"):
+
+    def load_high_score(self, game_mode, filename="highscore.json"):
         try:
             with open(filename, "r", encoding="UTF-8") as f:
                 data = json.load(f)
-                return data.get("high_score", 0)
+                return data.get(game_mode, 0)
+
         except FileNotFoundError:
             return 0
+
 

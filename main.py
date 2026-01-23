@@ -31,7 +31,7 @@ clock = pygame.time.Clock()
 player_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT)
 food = Food(SCREEN_WIDTH, SCREEN_HEIGHT, player_snake.segments)
 walls = Walls(SCREEN_WIDTH, SCREEN_HEIGHT)
-score = Scoreboard(SCREEN_WIDTH, SCREEN_HEIGHT)
+score = Scoreboard(SCREEN_WIDTH, SCREEN_HEIGHT, game_mode)
 bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
 game_over_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/snake_game_over.png")
 menu_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -133,6 +133,10 @@ def reset_game():
     player_snake.create_snake()
     food.refresh(player_snake.segments)
     score.reset()
+    sounds.stop("game_over")
+    music.stop()
+    music.play("gameplay")
+
 
 alien = pygame.image.load("assets/alien.png")
 alien_rect = alien.get_rect(center=(100, 100))
@@ -144,10 +148,10 @@ while running:
         menu_choice = menu(screen, score.font, player_snake)
         if menu_choice in ("classic","wrap"):
             game_mode = menu_choice
+            score.set_mode(game_mode)
             game_state = "playing"
         elif menu_choice == "exit":
             game_state = "exit"
-            running = False
             break
         elif menu_choice == "resume":
             game_state = "resume"
@@ -156,6 +160,7 @@ while running:
             if game_state == "playing":
                 music.play("gameplay")
                 # Entry Point (Game reset)
+                player_snake.is_paused = False
                 player_snake.create_snake()
                 score.reset()
                 direction = "RIGHT"
@@ -180,6 +185,7 @@ while running:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT or game_state == "exit":
                         playing = False
+                        running = False
                         game_state = "exit"
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_UP and direction != "DOWN":
@@ -209,7 +215,7 @@ while running:
 
                 #Game Over
                 if player_snake.check_self_collision() or walls.check_collision(player_snake, SCREEN_WIDTH, SCREEN_HEIGHT, game_mode):
-                    score.save_high_score(score.score)
+                    score.save_high_score(score.score, game_mode)
                     music.play("game_over", loop=0)
                     sounds.play("game_over")
                     if continue_screen(screen, score.font):
