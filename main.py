@@ -4,6 +4,7 @@ from food import Food
 from walls import Walls
 from scoreboard import Scoreboard
 from background import Background
+from alien import Alien
 from soundmanager import SoundManager
 from musicmanager import MusicManager
 
@@ -35,6 +36,7 @@ score = Scoreboard(SCREEN_WIDTH, SCREEN_HEIGHT, game_mode)
 bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
 game_over_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/snake_game_over.png")
 menu_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT)
+alien_boss = Alien(SCREEN_WIDTH, SCREEN_HEIGHT, BLOCK_SIZE)
 sounds = SoundManager()
 music = MusicManager()
 
@@ -137,12 +139,6 @@ def reset_game():
     music.stop()
     music.play("gameplay")
 
-
-alien = pygame.image.load("assets/alien.png")
-alien_rect = alien.get_rect(center=(100, 100))
-
-
-
 while running:
     if game_state == "menu":
         menu_choice = menu(screen, score.font, player_snake)
@@ -206,6 +202,7 @@ while running:
             
                 # 2. Update game state
                 if not player_snake.is_paused:
+                    alien_boss.update()
                     old_head_rect = player_snake.head.copy()
                     player_snake.move(direction)
                     if player_snake.head.colliderect(food.rect) or old_head_rect.colliderect(food.rect):
@@ -237,6 +234,7 @@ while running:
                 food.draw(screen, player_snake)
                 player_snake.draw(screen, direction)
                 score.draw(screen, player_snake)
+                alien_boss.draw(screen)
                 pygame.display.update()
 
                 # 4. Control speed
