@@ -15,6 +15,7 @@ class Snake:
         self.head = self.segments[0]
         self.tail = self.segments[-1]
         self.is_paused = False
+        self.should_grow = False
         sprites = SpriteManager("assets/snake2.png", block_size=self.block_size)
         self.head_right = sprites.get_sprite(col=4, row=3)
         self.head_left = sprites.get_sprite(col=2, row=3)
@@ -35,30 +36,37 @@ class Snake:
 
 
     def move(self, direction, growth=False):
-        head_x = self.segments[0].x
-        head_y = self.segments[0].y
+            head_x = self.segments[0].x
+            head_y = self.segments[0].y
 
-        if direction == "UP":
-            head_y -= self.block_size
-        elif direction == "DOWN":
-            head_y += self.block_size
-        elif direction == "LEFT":
-            head_x -= self.block_size
-        elif direction == "RIGHT":
-            head_x += self.block_size
+            # 1. Calculate new coordinates
+            if direction == "UP":
+                head_y -= self.block_size
+            elif direction == "DOWN":
+                head_y += self.block_size
+            elif direction == "LEFT":
+                head_x -= self.block_size
+            elif direction == "RIGHT":
+                head_x += self.block_size
 
-        # Insert new head
-        new_head = pygame.Rect(head_x, head_y, self.block_size, self.block_size)
-        self.segments.insert(0, new_head)
+            # 2. Insert new head
+            new_head = pygame.Rect(head_x, head_y, self.block_size, self.block_size)
+            self.segments.insert(0, new_head)
 
+            # --- THE FIX IS HERE ---
+            # Check the flag before we decide to remove the tail
+            if self.should_grow:
+                growth = True
+                self.should_grow = False 
+            # -----------------------
 
-        # Remove tail (unless growing)
-        if not growth:
-            self.segments.pop()
+            # 3. Remove tail (unless growing)
+            if not growth:
+                self.segments.pop()
 
-        # Update head/tail references
-        self.head = self.segments[0]
-        self.tail = self.segments[-1]
+            # 4. Update head/tail references
+            self.head = self.segments[0]
+            self.tail = self.segments[-1]
 
     def draw(self, screen, direction):
         if direction == "RIGHT":

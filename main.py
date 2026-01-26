@@ -206,12 +206,13 @@ while running:
             
                 # 2. Update game state
                 if not player_snake.is_paused:
+                    old_head_rect = player_snake.head.copy()
                     player_snake.move(direction)
-                    if player_snake.head.colliderect(food.rect):
+                    if player_snake.head.colliderect(food.rect) or old_head_rect.colliderect(food.rect):
                         sounds.play("eat")
                         score.increase(food.value)
                         food.refresh(player_snake.segments)
-                        player_snake.move(direction, growth=True)
+                        player_snake.should_grow = True
 
                 #Game Over
                 if player_snake.check_self_collision() or walls.check_collision(player_snake, SCREEN_WIDTH, SCREEN_HEIGHT, game_mode):

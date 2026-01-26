@@ -86,4 +86,3 @@ class Walls:
                 snake.head.right > screen_width - self.block_size):
                 return True  # collision detected
         return False
-
