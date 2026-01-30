@@ -11,13 +11,16 @@ class Alien:
         self.is_spawning = True
         self.intro_triggered = False
         self.spawn_timer = pygame.time.get_ticks()
-        self.health = 5
+        self.health = 1
         self.block_size = block_size
         self.move_speed = 5
         self.boss_size = block_size * 4
         self.behavior_counter = 0
         self.hit_cooldown = 500 
         self.last_hit_time = 0
+        self.is_dying = False
+        self.death_alpha = 255
+        self.death_timer = 0
         
         # Graphics
         self.image = pygame.image.load("assets/alien.png").convert_alpha()
@@ -47,7 +50,7 @@ class Alien:
         self.is_spawning = True
         self.intro_triggered = False
         self.spawn_timer = 0 # Syncs the flash timer!
-        self.health = 5  # Set your starting health
+        self.health = 1  # Set your starting health
 
         self.behavior_counter = 0
         self.last_hit_time = -1000
@@ -55,6 +58,9 @@ class Alien:
         self.last_shot_time = 0
         self.shoot_cooldown = 2000
         self.move_speed = 5
+        self.is_dying = False
+        self.death_alpha = 255
+        self.death_timer = 0
 
         # Randomize position
         self.x = random.randrange(0, self.screen_width - self.boss_size, self.block_size)
@@ -65,10 +71,26 @@ class Alien:
 
     def draw(self, screen):
         current_time = pygame.time.get_ticks()
-        
         # 1. Start with a fresh copy of the image
         temp_image = self.image.copy()
         
+        # --- NEW: THE DEATH SEQUENCE ---
+        if self.is_dying:
+            elapsed = current_time - self.death_timer
+            
+            # Calculate fade: 255 (solid) to 0 (invisible) over 1 second
+            alpha = max(0, 255 - int((elapsed / 1000) * 255))
+            temp_image.set_alpha(alpha)
+            
+            # Sink effect
+            sink_offset = (elapsed / 1000) * (self.boss_size // 2)
+            screen.blit(temp_image, (self.rect.x, self.rect.y + sink_offset))
+
+            # FINALLY kill the boss once the animation is done
+            if alpha <= 0:
+                self.boss_alive = False
+            return True
+
         # Calculate how long it has been since the last hit
         time_since_hit = current_time - self.last_hit_time
 
@@ -101,6 +123,10 @@ class Alien:
         if self.is_spawning:
             if current_time - self.spawn_timer > 1500:
                 self.is_spawning = False
+            return
+        
+        if self.is_dying:
+            # Stop moving and shooting while dying
             return
 
         # --- 1. THE LEGS: Just sliding ---
@@ -178,7 +204,7 @@ class Alien:
                       and -50 < s.rect.y < self.screen_height + 50]
 
     def draw_health_bar(self, screen):
-        if not self.is_spawning:
+        if not self.is_spawning and not self.is_dying:
             bar_width = 50
             bar_height = 6
             x = self.rect.centerx - (bar_width // 2)

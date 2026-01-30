@@ -20,7 +20,7 @@ playing = False
 menu_choice = None
 game_state = "menu"
 game_mode = None
-BOSS_TRIGGER_SCORE = 50
+BOSS_TRIGGER_SCORE = 1
 # Menu snake specific rule
 MENU_SNAKE_MAX_LENGTH = SCREEN_WIDTH // BLOCK_SIZE // 2
 LAST_SPEED = 10
@@ -193,7 +193,7 @@ while running:
                 direction = "RIGHT"
             elif game_state == "resume":
                 # Resume existing game
-                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive:
+                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive and not alien_boss.is_dying:
                     music.play("ultra")
                 music.play("gameplay")
             player_snake.is_paused = False
@@ -206,8 +206,10 @@ while running:
                 if game_speed > LAST_SPEED:
                     sounds.play("speed_up")
                     LAST_SPEED = game_speed
-                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive:
+                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive and not alien_boss.is_dying:
                     music.play("ultra")
+                else:
+                    music.play("gameplay")
                 # 1. Handle input/events
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT or game_state == "exit":
@@ -252,27 +254,25 @@ while running:
                         alien_boss.health -= 1
                         alien_boss.last_hit_time = current_time
                         sounds.play("boss_dmg")
-                        new_x = random.randint(1, (SCREEN_WIDTH // BLOCK_SIZE) - 2) * BLOCK_SIZE
-                        new_y = random.randint(1, (SCREEN_HEIGHT // BLOCK_SIZE) - 2) * BLOCK_SIZE
+                        if alien_boss.health > 0:
+                            new_x = random.randint(1, (SCREEN_WIDTH // BLOCK_SIZE) - 2) * BLOCK_SIZE
+                            new_y = random.randint(1, (SCREEN_HEIGHT // BLOCK_SIZE) - 2) * BLOCK_SIZE
 
-                        # 2. Teleport the body
-                        alien_boss.rect.x = new_x
-                        alien_boss.rect.y = new_y
+                            alien_boss.rect.x = new_x
+                            alien_boss.rect.y = new_y
+                            alien_boss.target_x = new_x
+                            alien_boss.target_y = new_y
 
-                        alien_boss.target_x = new_x
-                        alien_boss.target_y = new_y
-
-
-                        if len(player_snake.segments) > 5:
-                            for _ in range(3):
-                                player_snake.segments.pop()
+                            if len(player_snake.segments) > 5:
+                                for _ in range(3):
+                                    player_snake.segments.pop()
                         #print(f"BOSS HIT! Health remaining: {alien_boss.health}")
-                        if alien_boss.health <= 0 and alien_boss.boss_alive:
-                            alien_boss.boss_alive = False
+                        if alien_boss.health <= 0 and not alien_boss.is_dying:
+                            alien_boss.is_dying = True
+                            alien_boss.death_timer = pygame.time.get_ticks()
                             music.stop()
                             sounds.play("scream")
                             sounds.play("explosion")
-                            music.play("gameplay")
                             #print("VICTORY! The Alien has retreated!")
                     # Inside your main loop (Update Section)
                     for s in alien_boss.shurikens[:]:
