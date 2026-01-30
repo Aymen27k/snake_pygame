@@ -25,7 +25,6 @@ class Snake:
 
 
 
-    
     def create_snake(self):
         start_x, start_y = 400, 300
         self.segments = [
