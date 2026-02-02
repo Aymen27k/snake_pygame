@@ -34,15 +34,18 @@ class Scoreboard:
         screen.blit(score_text, self.position)
         # If paused, draw big "PAUSED" in the center
         if snake.is_paused:
-            pause_font = pygame.font.SysFont("Arial", 72, bold=True)
-            pause_text = pause_font.render("PAUSED", True, self.color)
-            screen.blit(
-                pause_text,
-                (
-                    self.screen_width // 2 - pause_text.get_width() // 2,
-                    self.screen_height // 2 - pause_text.get_height() // 2
+            # --- THE BLINK TRIGGER ---
+            # Only draw the text if the current half-second is 'even'
+            if (pygame.time.get_ticks() // 500) % 2 == 0:
+                pause_font = pygame.font.SysFont("Arial", 72, bold=True)
+                pause_text = pause_font.render("PAUSED", True, self.color)
+                screen.blit(
+                    pause_text,
+                    (
+                        self.screen_width // 2 - pause_text.get_width() // 2,
+                        self.screen_height // 2 - pause_text.get_height() // 2
+                    )
                 )
-            )
 
 
 
@@ -70,5 +73,7 @@ class Scoreboard:
 
         except FileNotFoundError:
             return 0
-
-
+        
+    def is_new_high_score(self):
+        """Returns True if the current score has surpassed the saved high score."""
+        return self.score > self.high_score

@@ -20,10 +20,14 @@ playing = False
 menu_choice = None
 game_state = "menu"
 game_mode = None
-BOSS_TRIGGER_SCORE = 1
+game_start_time = 0
+boss_killed = 0
+BOSS_TRIGGER_SCORE = 10
+
 # Menu snake specific rule
 MENU_SNAKE_MAX_LENGTH = SCREEN_WIDTH // BLOCK_SIZE // 2
 LAST_SPEED = 10
+
 
 
 #initialize
@@ -37,6 +41,7 @@ walls = Walls(SCREEN_WIDTH, SCREEN_HEIGHT)
 score = Scoreboard(SCREEN_WIDTH, SCREEN_HEIGHT, game_mode)
 bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
 game_over_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/snake_game_over.png")
+new_high_score_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/new_high_score.png")
 menu_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT)
 alien_boss = Alien(SCREEN_WIDTH, SCREEN_HEIGHT, BLOCK_SIZE)
 sounds = SoundManager()
@@ -95,8 +100,8 @@ def menu(screen, font, player_snake):
 
 
 # Continue Screen
-def continue_screen(screen, font, countdown_time=10):
-
+def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, countdown_time=10):
+    global SCREEN_WIDTH, SCREEN_HEIGHT
     start_ticks = pygame.time.get_ticks()
     continue_game = True
     player_chose = False
@@ -105,7 +110,26 @@ def continue_screen(screen, font, countdown_time=10):
         remaining = countdown_time - seconds_passed
 
         screen.fill((0,0,0))
-        game_over_bg.draw()
+
+        if is_new_high_score:
+            new_high_score_bg.draw()
+        else:
+            game_over_bg.draw()
+        # Create a small "Summary Box" on the screen
+        stats_font = pygame.font.SysFont("Courier New", 28, bold=True) # Courier looks 'techy'
+
+        left_x = SCREEN_WIDTH // 2 - 180
+        right_x = SCREEN_WIDTH // 2 + 50
+        stats_y = SCREEN_HEIGHT // 2 + 150
+
+        # Render the lines
+        score_text = stats_font.render(f"SCORE: {score.score}", True, (0, 255, 0))
+        time_text = stats_font.render(f"TIME : {time_str}", True, (255, 255, 255))
+        boss_text = stats_font.render(f"BOSSES: {boss_kills}", True, (0, 0, 0))
+        # Draw them with a bit of vertical spacing
+        screen.blit(score_text, (left_x, stats_y))
+        screen.blit(time_text, (right_x, stats_y))
+        screen.blit(boss_text, (SCREEN_WIDTH // 2 - 60, stats_y + 70))
         # Countdown Text
         text = font.render(f"Continue? {remaining}", True, (255,255,255))
         screen.blit(text, (screen.get_width()//2 - text.get_width()//2,
@@ -134,10 +158,12 @@ def continue_screen(screen, font, countdown_time=10):
     return player_chose
 
 def reset_game():
-    global alien_boss, SCREEN_WIDTH, SCREEN_HEIGHT
+    global game_start_time, boss_killed
+    game_start_time = pygame.time.get_ticks()
     player_snake.create_snake()
     food.refresh(player_snake.segments)
     alien_boss.reset()
+    boss_killed = 0
     score.reset()
     sounds.stop("game_over")
     music.stop()
@@ -190,6 +216,8 @@ while running:
                 player_snake.create_snake()
                 alien_boss.reset()
                 score.reset()
+                game_start_time = pygame.time.get_ticks()
+                print(f"Game start time post Entry point = {game_start_time}")
                 direction = "RIGHT"
             elif game_state == "resume":
                 # Resume existing game
@@ -212,27 +240,27 @@ while running:
                     music.play("gameplay")
                 # 1. Handle input/events
                 for event in pygame.event.get():
-                    if event.type == pygame.QUIT or game_state == "exit":
+                    if event.type == pygame.QUIT:
                         playing = False
                         running = False
-                        game_state = "exit"
                     if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_UP and direction != "DOWN":
-                            direction = "UP"
-                        elif event.key == pygame.K_DOWN and direction != "UP":
-                            direction = "DOWN"
-                        elif event.key == pygame.K_LEFT and direction != "RIGHT":
-                            direction = "LEFT"
-                        elif event.key == pygame.K_RIGHT and direction != "LEFT":
-                            direction = "RIGHT"
-                        elif event.key == pygame.K_p:
+                        # 1. These keys should ALWAYS work (Pause/Exit)
+                        if event.key == pygame.K_p:
                             player_snake.is_paused = not player_snake.is_paused
                         elif event.key == pygame.K_ESCAPE:
-                            if not player_snake.is_paused:
-                                player_snake.is_paused = not player_snake.is_paused
                             game_state = "menu"
                             playing = False
-            
+
+                        # 2. THE FIX: Only update direction if NOT paused
+                        if not player_snake.is_paused:
+                            if event.key == pygame.K_UP and direction != "DOWN":
+                                direction = "UP"
+                            elif event.key == pygame.K_DOWN and direction != "UP":
+                                direction = "DOWN"
+                            elif event.key == pygame.K_LEFT and direction != "RIGHT":
+                                direction = "LEFT"
+                            elif event.key == pygame.K_RIGHT and direction != "LEFT":
+                                direction = "RIGHT"
                 # 2. Update game state
                 if not player_snake.is_paused:
                     if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive:
@@ -270,6 +298,7 @@ while running:
                         if alien_boss.health <= 0 and not alien_boss.is_dying:
                             alien_boss.is_dying = True
                             alien_boss.death_timer = pygame.time.get_ticks()
+                            boss_killed += 1
                             music.stop()
                             sounds.play("scream")
                             sounds.play("explosion")
@@ -288,11 +317,23 @@ while running:
 
                 # Game Over
                 if is_game_over(player_snake, walls, alien_boss, game_mode, score.score):
-                    score.save_high_score(score.score, game_mode)
+                    # Calculate total seconds
+                    end_time = pygame.time.get_ticks()
+                    total_seconds = (end_time - game_start_time) // 1000
+                    # Format it into Minutes:Seconds
+                    minutes = total_seconds // 60
+                    seconds = total_seconds % 60
+                    time_string = f"{minutes:02d}:{seconds:02d}"
+
+
+                    new_record = score.is_new_high_score()
+                    if new_record:
+                        score.save_high_score(score.score, game_mode)
+
                     music.play("game_over", loop=0)
                     sounds.play("game_over")
                     # Continue ?
-                    if continue_screen(screen, score.font):
+                    if continue_screen(screen, score.font, new_record, time_string, boss_killed):
                         reset_game()
                         direction = "RIGHT"
                     else:

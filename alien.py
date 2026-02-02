@@ -11,7 +11,7 @@ class Alien:
         self.is_spawning = True
         self.intro_triggered = False
         self.spawn_timer = pygame.time.get_ticks()
-        self.health = 1
+        self.health = 5
         self.block_size = block_size
         self.move_speed = 5
         self.boss_size = block_size * 4
@@ -50,7 +50,7 @@ class Alien:
         self.is_spawning = True
         self.intro_triggered = False
         self.spawn_timer = 0 # Syncs the flash timer!
-        self.health = 1  # Set your starting health
+        self.health = 5  # Set your starting health
 
         self.behavior_counter = 0
         self.last_hit_time = -1000
