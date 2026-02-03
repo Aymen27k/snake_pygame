@@ -21,12 +21,17 @@ menu_choice = None
 game_state = "menu"
 game_mode = None
 game_start_time = 0
+total_paused_time = 0
+pause_start_tick = 0
+boss_active = False
 boss_killed = 0
-BOSS_TRIGGER_SCORE = 10
+boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
+next_goal = 0
+LAST_SPEED = 10
 
 # Menu snake specific rule
 MENU_SNAKE_MAX_LENGTH = SCREEN_WIDTH // BLOCK_SIZE // 2
-LAST_SPEED = 10
+
 
 
 
@@ -158,11 +163,15 @@ def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, count
     return player_chose
 
 def reset_game():
-    global game_start_time, boss_killed
+    global game_start_time, boss_killed, total_paused_time, pause_start_tick, boss_active, boss_milestones
+    total_paused_time = 0
+    pause_start_tick = 0
     game_start_time = pygame.time.get_ticks()
+    boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
     player_snake.create_snake()
     food.refresh(player_snake.segments)
     alien_boss.reset()
+    boss_active = False
     boss_killed = 0
     score.reset()
     sounds.stop("game_over")
@@ -180,7 +189,7 @@ def is_game_over(player_snake, walls, alien_boss, game_mode, current_score):
         return True
         
     # 3. Boss Body Collision
-    if current_score >= BOSS_TRIGGER_SCORE:
+    if boss_active and alien_boss.boss_alive:
         boss_hitbox = alien_boss.rect.inflate(-30, -30)
         if player_snake.head.colliderect(boss_hitbox):
             pass
@@ -213,15 +222,19 @@ while running:
                 music.play("gameplay")
                 # Entry Point (Game reset)
                 player_snake.is_paused = False
+                boss_active = False
+                boss_killed = 0
+                total_paused_time = 0
+                pause_start_tick = 0
+                boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
                 player_snake.create_snake()
                 alien_boss.reset()
                 score.reset()
                 game_start_time = pygame.time.get_ticks()
-                print(f"Game start time post Entry point = {game_start_time}")
                 direction = "RIGHT"
             elif game_state == "resume":
                 # Resume existing game
-                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive and not alien_boss.is_dying:
+                if boss_active and alien_boss.boss_alive and not alien_boss.is_dying:
                     music.play("ultra")
                 music.play("gameplay")
             player_snake.is_paused = False
@@ -230,11 +243,25 @@ while running:
 
 
             while playing:
+                # Check IF the list is empty BEFORE trying to grab the first number
+                if boss_milestones:
+                    next_goal = boss_milestones[0]
+                    
+                    # Now check the score
+                    if score.score >= next_goal:
+                        if not boss_active:
+                            boss_active = True
+                            boss_milestones.pop(0)
+                            print(f"Boss {boss_killed + 1} Triggered!")
+                else:
+                    # Optional: If the list IS empty, give it a new goal!
+                    # This makes the game infinite.
+                    boss_milestones.append(score.score + 50)
                 game_speed = min(10 + (score.score // 5), 20)
                 if game_speed > LAST_SPEED:
                     sounds.play("speed_up")
                     LAST_SPEED = game_speed
-                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive and not alien_boss.is_dying:
+                if boss_active and alien_boss.boss_alive and not alien_boss.is_dying:
                     music.play("ultra")
                 else:
                     music.play("gameplay")
@@ -247,9 +274,18 @@ while running:
                         # 1. These keys should ALWAYS work (Pause/Exit)
                         if event.key == pygame.K_p:
                             player_snake.is_paused = not player_snake.is_paused
+                            if player_snake.is_paused:
+                                # Just entered pause: record the "start" of the pause
+                                pause_start_tick = pygame.time.get_ticks()
+                            else:
+                                # Just exited pause: calculate duration and add to buffer
+                                pause_duration = pygame.time.get_ticks() - pause_start_tick
+                                total_paused_time += pause_duration
                         elif event.key == pygame.K_ESCAPE:
-                            game_state = "menu"
-                            playing = False
+                            if not player_snake.is_paused:
+                                player_snake.is_paused = True
+                                game_state = "menu"
+                                playing = False
 
                         # 2. THE FIX: Only update direction if NOT paused
                         if not player_snake.is_paused:
@@ -261,9 +297,12 @@ while running:
                                 direction = "LEFT"
                             elif event.key == pygame.K_RIGHT and direction != "LEFT":
                                 direction = "RIGHT"
+                            elif event.key == pygame.K_b: # Press 'B' for Boss
+                                score.score += 10
+                                print("Score cheat detected ! You gain 10 points")
                 # 2. Update game state
                 if not player_snake.is_paused:
-                    if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive:
+                    if boss_active and alien_boss.boss_alive:
                         alien_boss.update(player_snake.head.x, player_snake.head.y)
                         alien_boss.update_projectiles()
                     old_head_rect = player_snake.head.copy()
@@ -275,13 +314,16 @@ while running:
                         player_snake.should_grow = True
 
                 # Fighting the Alien Boss
-                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive:
+                if boss_active:
                     boss_hitbox = alien_boss.rect.inflate(-30, -30)
                     current_time = pygame.time.get_ticks()
-                    if player_snake.head.colliderect(boss_hitbox) and alien_boss.health > 0 and current_time - alien_boss.last_hit_time > alien_boss.hit_cooldown:
-                        alien_boss.health -= 1
-                        alien_boss.last_hit_time = current_time
-                        sounds.play("boss_dmg")
+
+                    # 1. TRIGGER DEATH (Only when touching)
+                    if player_snake.head.colliderect(boss_hitbox) and alien_boss.health > 0:
+                        if current_time - alien_boss.last_hit_time > alien_boss.hit_cooldown:
+                            alien_boss.health -= 1
+                            alien_boss.last_hit_time = current_time
+                            sounds.play("boss_dmg")
                         if alien_boss.health > 0:
                             new_x = random.randint(1, (SCREEN_WIDTH // BLOCK_SIZE) - 2) * BLOCK_SIZE
                             new_y = random.randint(1, (SCREEN_HEIGHT // BLOCK_SIZE) - 2) * BLOCK_SIZE
@@ -302,14 +344,26 @@ while running:
                             music.stop()
                             sounds.play("scream")
                             sounds.play("explosion")
-                            #print("VICTORY! The Alien has retreated!")
+                            # --- THE CLEANUP LOGIC ---
+                        # 2. THE CLEANUP (OUTSIDE the collision check!)
+                    # This must be indented at the same level as "if boss_active"
+                    if alien_boss.is_dying:
+                        if pygame.time.get_ticks() - alien_boss.death_timer > 2000:
+                            boss_active = False      
+                            alien_boss.is_dying = False
+                            alien_boss.intro_triggered = False
+                            alien_boss.boss_alive = False
+                            alien_boss.shurikens.clear()
+                            alien_boss.reset() # Important to reset for next wave!
+                            print(f"CLEANUP COMPLETE! Ready for next milestone. Boss status: {boss_active}")
+                    #print(f"VICTORY! The Alien has retreated!")
                     # Inside your main loop (Update Section)
                     for s in alien_boss.shurikens[:]:
                         if player_snake.head.colliderect(s.rect):
                             # 1. The Penalty: Remove the tail
                             # 3. Feedback (Optional but recommended)
                             #print("OUCH! Snake Shrunk!")
-                            if len(player_snake.segments) > 2:
+                            if len(player_snake.segments) > 2 and not alien_boss.is_dying:
                                 sounds.play("dmg")
                                 player_snake.segments.pop()
                                 # 2. Cleanup: Remove the shuriken that hit us
@@ -319,7 +373,8 @@ while running:
                 if is_game_over(player_snake, walls, alien_boss, game_mode, score.score):
                     # Calculate total seconds
                     end_time = pygame.time.get_ticks()
-                    total_seconds = (end_time - game_start_time) // 1000
+                    actual_play_ms = (end_time - game_start_time) - total_paused_time
+                    total_seconds = actual_play_ms // 1000
                     # Format it into Minutes:Seconds
                     minutes = total_seconds // 60
                     seconds = total_seconds % 60
@@ -351,16 +406,17 @@ while running:
                 food.draw(screen, player_snake)
                 player_snake.draw(screen, direction)
                 score.draw(screen, player_snake)
-                if score.score >= BOSS_TRIGGER_SCORE:
+                if boss_active:
                     if not alien_boss.intro_triggered:
-                        alien_boss.spawn_timer = pygame.time.get_ticks() # Start the 1.5s clock NOW
+                        alien_boss.spawn_timer = pygame.time.get_ticks()
                         alien_boss.intro_triggered = True
+                        alien_boss.is_spawning = True
                     alien_boss.flashing_screen(screen)
-                if score.score >= BOSS_TRIGGER_SCORE and alien_boss.boss_alive:
+                if boss_active and alien_boss.boss_alive:
                     alien_boss.draw(screen)
                     alien_boss.draw_health_bar(screen)
                     # Draw a red outline around the boss's actual hitbox so you can see it
-                    pygame.draw.rect(screen, (255, 0, 0), alien_boss.rect.inflate(-30, -30), 2)
+                    #pygame.draw.rect(screen, (255, 0, 0), alien_boss.rect.inflate(-30, -30), 2)
                     for s in alien_boss.shurikens:
                         s.draw(screen)
                 pygame.display.update()

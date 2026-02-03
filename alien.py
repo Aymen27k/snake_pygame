@@ -21,7 +21,7 @@ class Alien:
         self.is_dying = False
         self.death_alpha = 255
         self.death_timer = 0
-        
+
         # Graphics
         self.image = pygame.image.load("assets/alien.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.boss_size, self.boss_size))
@@ -241,13 +241,17 @@ class Alien:
     def flashing_screen(self, screen):
         current_time = pygame.time.get_ticks()
 
+        # Calculate how long since we started spawning
+        # (Assuming self.spawn_timer was set to pygame.time.get_ticks() in the loop)
+        elapsed = current_time - self.spawn_timer
+
         # --- 1. THE SCREEN FLASH (Intro) ---
-        if self.is_spawning:
-            # We use a simple toggle: every 200ms, switch between red and normal
+        if elapsed < 1500: # Flash for 1.5 seconds
             if (current_time // 200) % 2 == 0:
-                # Create a transparent red surface the size of the game window
                 flash_overlay = pygame.Surface((self.screen_width, self.screen_height))
-                flash_overlay.fill((255, 0, 0)) # Pure Red
-                flash_overlay.set_alpha(70)     # Low alpha = subtle "glow"
+                flash_overlay.fill((255, 0, 0)) 
+                flash_overlay.set_alpha(70)     
                 screen.blit(flash_overlay, (0, 0))
+        else:
+            self.is_spawning = False # Turn off the "spawning" state once time is up
         
