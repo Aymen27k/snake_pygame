@@ -4,19 +4,20 @@ import shuriken
 from sprite import SpriteManager
 
 class Alien:
-    def __init__(self, screen_width, screen_height, block_size):
+    def __init__(self, screen_width, screen_height, level, block_size):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.boss_alive = True
         self.is_spawning = True
         self.intro_triggered = False
         self.spawn_timer = pygame.time.get_ticks()
-        self.health = 5
+        self.max_health = 5
+        self.health = self.max_health
         self.block_size = block_size
         self.move_speed = 5
         self.boss_size = block_size * 4
         self.behavior_counter = 0
-        self.hit_cooldown = 500 
+        self.hit_cooldown = 500
         self.last_hit_time = 0
         self.is_dying = False
         self.death_alpha = 255
@@ -42,23 +43,25 @@ class Alien:
         self.target_y = self.y
 
 
-        self.reset()
+        self.reset(level)
 
-    def reset(self):
+    def reset(self, level):
         """Call this to restart the boss completely"""
         self.boss_alive = True
         self.is_spawning = True
         self.intro_triggered = False
-        self.spawn_timer = 0 # Syncs the flash timer!
-        self.health = 5  # Set your starting health
+        self.spawn_timer = pygame.time.get_ticks()
+        self.max_health = 5 + (level // 2)  # Set your starting health
+        self.health = self.max_health
 
         self.behavior_counter = 0
         self.last_hit_time = -1000
         self.shurikens = []
         self.last_shot_time = 0
-        self.shoot_cooldown = 2000
-        self.move_speed = 5
+        self.shoot_cooldown = max(800, 2000 - (level * 150))
+        self.move_speed = 5 + (level * 2)
         self.is_dying = False
+        self.hit_cooldown = 500
         self.death_alpha = 255
         self.death_timer = 0
 
@@ -119,27 +122,36 @@ class Alien:
     def update(self, player_x, player_y):
         current_time = pygame.time.get_ticks()
 
-        # 1. Spawning Pause (Keeps him still for 1.5s)
+        # If dying, stop everything (including shurikens)
+        if self.is_dying:
+            return
+        
+        # If spawning, we wait. 
+        # (Unless you WANT him to slide in, then move the logic below inside here)
         if self.is_spawning:
             if current_time - self.spawn_timer > 1500:
                 self.is_spawning = False
             return
-        
-        if self.is_dying:
-            # Stop moving and shooting while dying
-            return
 
-        # --- 1. THE LEGS: Just sliding ---
-        if self.rect.x < self.target_x: self.rect.x += self.move_speed
-        elif self.rect.x > self.target_x: self.rect.x -= self.move_speed
+        # --- 1. THE LEGS: Sliding with 'Overshoot' protection ---
+        dx = self.target_x - self.rect.x
+        dy = self.target_y - self.rect.y
 
-        if self.rect.y < self.target_y: self.rect.y += self.move_speed
-        elif self.rect.y > self.target_y: self.rect.y -= self.move_speed
+        # Move X
+        if abs(dx) < self.move_speed:
+            self.rect.x = self.target_x # Snap to target if we are close
+        else:
+            self.rect.x += self.move_speed if dx > 0 else -self.move_speed
 
-        # --- 2. THE BRAIN: Only acts when we arrive at a grid square ---
+        # Move Y
+        if abs(dy) < self.move_speed:
+            self.rect.y = self.target_y # Snap to target if we are close
+        else:
+            self.rect.y += self.move_speed if dy > 0 else -self.move_speed
+
+        # --- 2. THE BRAIN: Now works perfectly with any speed! ---
         if self.rect.x == self.target_x and self.rect.y == self.target_y:
             self.behavior_counter += 1
-            
             if self.behavior_counter >= 5:
                 # Time to hunt!
                 self.hunt_player(player_x, player_y)
@@ -148,9 +160,8 @@ class Alien:
                 # Just roaming
                 self.roam_randomly()
 
+        # --- 3. COMBAT ---
         self.throw_shurikens()
-
-        # Always update the flying shurikens
         self.update_projectiles()
 
     def roam_randomly(self):
@@ -174,11 +185,12 @@ class Alien:
             self.apply_target_with_boundaries(self.rect.x, self.rect.y + step_y)
 
     def apply_target_with_boundaries(self, new_x, new_y):
-        # This is our safety net so he doesn't walk off screen
-        if 0 <= new_x <= self.screen_width - self.boss_size:
-            self.target_x = new_x
-        if 0 <= new_y <= self.screen_height - self.boss_size:
-            self.target_y = new_y
+        # This 'clamps' the X between 0 and the Right Edge
+        # It says: "Pick the higher of 0 or the coordinate, but don't let it exceed the max width"
+        self.target_x = max(0, min(new_x, self.screen_width - self.boss_size))
+        
+        # This 'clamps' the Y between 0 and the Bottom Edge
+        self.target_y = max(0, min(new_y, self.screen_height - self.boss_size))
 
 
     def throw_shurikens(self):
@@ -210,32 +222,31 @@ class Alien:
             x = self.rect.centerx - (bar_width // 2)
             
             # --- ADAPTIVE POSITIONING ---
-            # If the boss is in the top 50 pixels of the screen...
             if self.rect.top < 50:
-                # Put the bar 15 pixels BELOW the boss
                 y = self.rect.bottom + 15
             else:
-                # Put the bar 15 pixels ABOVE the boss (Normal)
                 y = self.rect.top - 15
             
-            # Calculate health
-            # (Assuming 5 is your BOSS_STARTING_HEALTH)
-            health_ratio = max(0, self.health / 5)
+            # --- 1. DYNAMIC CALCULATION ---
+            # No more hardcoded '5'! 
+            health_ratio = max(0, self.health / self.max_health)
             current_bar_width = int(bar_width * health_ratio)
 
-            # 1. Background
+            # Draw Background
             pygame.draw.rect(screen, (50, 0, 0), (x, y, bar_width, bar_height))
-            # 2. Health (Green/Red)
+            
+            # Draw Health (Green/Red)
             color = (0, 255, 0) if health_ratio > 0.4 else (255, 0, 0)
             pygame.draw.rect(screen, color, (x, y, current_bar_width, bar_height))
             
-            # 3. SEGMENT MARKERS (The League of Legends lines)
-            # Draw a small black line for every unit of health
-            for i in range(1, 5): # For 5 HP, we draw 4 internal lines
-                marker_x = x + (i * (bar_width // 5))
-                pygame.draw.line(screen, (0, 0, 0), (marker_x, y), (marker_x, y + bar_height - 1))
+            # --- 2. THE DYNAMIC MARKERS ---
+            # We draw a line for every unit of health EXCEPT the very last one
+            for i in range(1, self.max_health): 
+                # Calculate marker position based on current max_health
+                marker_x = x + (i * (bar_width / self.max_health))
+                pygame.draw.line(screen, (0, 0, 0), (int(marker_x), y), (int(marker_x), y + bar_height - 1))
 
-            # 4. Outline
+            # Draw Outline
             pygame.draw.rect(screen, (0, 0, 0), (x, y, bar_width, bar_height), 1)
 
     def flashing_screen(self, screen):

@@ -48,7 +48,7 @@ bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
 game_over_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/snake_game_over.png")
 new_high_score_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/new_high_score.png")
 menu_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT)
-alien_boss = Alien(SCREEN_WIDTH, SCREEN_HEIGHT, BLOCK_SIZE)
+alien_boss = Alien(SCREEN_WIDTH, SCREEN_HEIGHT, boss_killed, BLOCK_SIZE)
 sounds = SoundManager()
 music = MusicManager()
 
@@ -170,7 +170,7 @@ def reset_game():
     boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
     player_snake.create_snake()
     food.refresh(player_snake.segments)
-    alien_boss.reset()
+    alien_boss.reset(boss_killed)
     boss_active = False
     boss_killed = 0
     score.reset()
@@ -228,7 +228,7 @@ while running:
                 pause_start_tick = 0
                 boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
                 player_snake.create_snake()
-                alien_boss.reset()
+                alien_boss.reset(boss_killed)
                 score.reset()
                 game_start_time = pygame.time.get_ticks()
                 direction = "RIGHT"
@@ -253,6 +253,7 @@ while running:
                             boss_active = True
                             boss_milestones.pop(0)
                             print(f"Boss {boss_killed + 1} Triggered!")
+                            print(f"DEBUG: Boss #{boss_killed} spawned with Speed: {alien_boss.move_speed}, HP: {alien_boss.health} Fire rate: {alien_boss.shoot_cooldown}")
                 else:
                     # Optional: If the list IS empty, give it a new goal!
                     # This makes the game infinite.
@@ -319,19 +320,21 @@ while running:
                     current_time = pygame.time.get_ticks()
 
                     # 1. TRIGGER DEATH (Only when touching)
-                    if player_snake.head.colliderect(boss_hitbox) and alien_boss.health > 0:
+                    if player_snake.head.colliderect(boss_hitbox) and alien_boss.health > 0 and not alien_boss.is_spawning:
                         if current_time - alien_boss.last_hit_time > alien_boss.hit_cooldown:
                             alien_boss.health -= 1
                             alien_boss.last_hit_time = current_time
                             sounds.play("boss_dmg")
                         if alien_boss.health > 0:
-                            new_x = random.randint(1, (SCREEN_WIDTH // BLOCK_SIZE) - 2) * BLOCK_SIZE
-                            new_y = random.randint(1, (SCREEN_HEIGHT // BLOCK_SIZE) - 2) * BLOCK_SIZE
+                            pot_x = random.randint(1, (SCREEN_WIDTH // BLOCK_SIZE) - 2) * BLOCK_SIZE
+                            pot_y = random.randint(1, (SCREEN_HEIGHT // BLOCK_SIZE) - 2) * BLOCK_SIZE
+                            
+                            # Check if new position is within the Screen
+                            alien_boss.apply_target_with_boundaries(pot_x, pot_y)
 
-                            alien_boss.rect.x = new_x
-                            alien_boss.rect.y = new_y
-                            alien_boss.target_x = new_x
-                            alien_boss.target_y = new_y
+                            # Teleport to new position
+                            alien_boss.rect.x = alien_boss.target_x
+                            alien_boss.rect.y = alien_boss.target_y
 
                             if len(player_snake.segments) > 5:
                                 for _ in range(3):
@@ -354,7 +357,7 @@ while running:
                             alien_boss.intro_triggered = False
                             alien_boss.boss_alive = False
                             alien_boss.shurikens.clear()
-                            alien_boss.reset() # Important to reset for next wave!
+                            alien_boss.reset(boss_killed) # Important to reset for next wave!
                             print(f"CLEANUP COMPLETE! Ready for next milestone. Boss status: {boss_active}")
                     #print(f"VICTORY! The Alien has retreated!")
                     # Inside your main loop (Update Section)
