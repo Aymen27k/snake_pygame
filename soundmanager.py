@@ -11,6 +11,8 @@ class SoundManager:
             "explosion": pygame.mixer.Sound("assets/sfx/explosion.mp3"),
             "scream": pygame.mixer.Sound("assets/sfx/scream.mp3"),
             "boss_dmg": pygame.mixer.Sound("assets/sfx/boss_dmg.mp3"),
+            "poison_get": pygame.mixer.Sound("assets/sfx/poison_get.mp3"),
+            "shoot": pygame.mixer.Sound("assets/sfx/shoot.mp3"),
         }
 
     def play(self, name):

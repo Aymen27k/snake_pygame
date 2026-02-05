@@ -27,11 +27,23 @@ class Food:
             sprites.get_sprite(7, 3)   # cookie
         ]
 
+        self.poison_sprite = sprites.get_sprite(1, 5) # Poison Ammo
+        self.poison_rect = pygame.Rect(0, 0, 0, 0) # Hidden until spawned
+        self.poison_active = False
+        self.spawn_time = 0
+        self.last_expiry_time = 0
 
         # Create initial food rect
         self.rect = pygame.Rect(0, 0, block_size, block_size)
         self.color = (0, 0, 255)  # blue
         self.refresh(snake_segments)
+
+    def reset_poison(self):
+        self.poison_active = False
+        self.poison_rect.x = -100 # Move the "Ghost" away [cite: 2024-12-19]
+        self.poison_rect.y = -100
+        self.last_expiry_time = 0
+        self.spawn_time = 0
 
     def refresh(self, snake_segments):
         while True:
@@ -57,6 +69,23 @@ class Food:
                 else:
                     self.current_sprite = random.choice(self.normal_foods)
                     self.value = 1
+                break
+
+    def spawn_poison(self, snake_segments):
+        while True:
+            grid_min_x, grid_max_x = 1, (self.screen_width // self.block_size) - 2
+            grid_min_y, grid_max_y = 1, (self.screen_height // self.block_size) - 2
+
+            rx = random.randint(grid_min_x, grid_max_x) * self.block_size
+            ry = random.randint(grid_min_y, grid_max_y) * self.block_size
+            new_rect = pygame.Rect(rx, ry, self.block_size, self.block_size)
+
+            # Ensure it doesn't land on the snake OR the normal food
+            if not any(s.colliderect(new_rect) for s in snake_segments) and not new_rect.colliderect(self.rect):
+                self.poison_rect = new_rect
+                self.poison_active = True
+                self.spawn_time = pygame.time.get_ticks()
+                self.duration = 5000 # Time before it disappears
                 break
 
 
@@ -98,3 +127,14 @@ class Food:
 
             # Draw food
             screen.blit(scaled_sprite, (offset_x, offset_y))
+            if self.poison_active:
+                time_left = self.duration - (pygame.time.get_ticks() - self.spawn_time)
+                # You can reuse your bounce/sparkle logic here too!
+                screen.blit(self.poison_sprite, (self.poison_rect.x, self.poison_rect.y))
+                # If less than 2 seconds left, start flickering
+                if time_left < 2000:
+                    # The % 200 creates a blink every 200ms
+                    if pygame.time.get_ticks() % 400 < 200:
+                        screen.blit(self.poison_sprite, self.poison_rect)
+                else:
+                    screen.blit(self.poison_sprite, self.poison_rect)

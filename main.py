@@ -6,6 +6,7 @@ from walls import Walls
 from scoreboard import Scoreboard
 from background import Background
 from alien import Alien
+from projectile import PoisonProjectile
 from soundmanager import SoundManager
 from musicmanager import MusicManager
 
@@ -26,6 +27,7 @@ pause_start_tick = 0
 boss_active = False
 boss_killed = 0
 boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
+projectiles = []
 next_goal = 0
 LAST_SPEED = 10
 
@@ -173,10 +175,18 @@ def reset_game():
     alien_boss.reset(boss_killed)
     boss_active = False
     boss_killed = 0
+    player_snake.poison_ammo = 0
     score.reset()
     sounds.stop("game_over")
     music.stop()
     music.play("gameplay")
+
+def handle_boss_death():
+    global boss_killed
+    boss_killed += 1
+    music.stop()
+    sounds.play("scream")
+    sounds.play("explosion")
 
 
 def is_game_over(player_snake, walls, alien_boss, game_mode, current_score):
@@ -226,8 +236,10 @@ while running:
                 boss_killed = 0
                 total_paused_time = 0
                 pause_start_tick = 0
+                player_snake.poison_ammo = 0
                 boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
                 player_snake.create_snake()
+                food.reset_poison()
                 alien_boss.reset(boss_killed)
                 score.reset()
                 game_start_time = pygame.time.get_ticks()
@@ -246,7 +258,7 @@ while running:
                 # Check IF the list is empty BEFORE trying to grab the first number
                 if boss_milestones:
                     next_goal = boss_milestones[0]
-                    
+
                     # Now check the score
                     if score.score >= next_goal:
                         if not boss_active:
@@ -301,6 +313,12 @@ while running:
                             elif event.key == pygame.K_b: # Press 'B' for Boss
                                 score.score += 10
                                 print("Score cheat detected ! You gain 10 points")
+                            elif event.key == pygame.K_SPACE and player_snake.poison_ammo > 0:
+                                # Create a new shot at the snake's head position
+                                new_shot = PoisonProjectile(player_snake.head.x, player_snake.head.y, direction)
+                                projectiles.append(new_shot)
+                                player_snake.poison_ammo -= 1
+                                sounds.play("shoot")
                 # 2. Update game state
                 if not player_snake.is_paused:
                     if boss_active and alien_boss.boss_alive:
@@ -313,50 +331,59 @@ while running:
                         score.increase(food.value)
                         food.refresh(player_snake.segments)
                         player_snake.should_grow = True
+                    if food.poison_active:
+                        if player_snake.head.colliderect(food.poison_rect) or old_head_rect.colliderect(food.poison_rect):
+                            food.poison_active = False
+                            food.last_expiry_time = pygame.time.get_ticks()
+                            player_snake.poison_ammo += 1
+                            sounds.play("poison_get")
+                            food.poison_rect.x = -100
+                            food.poison_rect.y = -100
 
                 # Fighting the Alien Boss
                 if boss_active:
                     boss_hitbox = alien_boss.rect.inflate(-30, -30)
-                    current_time = pygame.time.get_ticks()
+                    current_time = pygame.time.get_ticks() # Use this for everything!
+
+                    # Poison food logic
+                    if not food.poison_active:
+                        # 1. Cooldown: Only spawn if it's been 3 seconds since the last one died
+                        # We'll need to initialize food.last_expiry_time = 0 in your Food __init__
+                        if current_time - getattr(food, 'last_expiry_time', 0) > 3000:
+                            # 2. Random Chance: 1% chance per frame
+                            if random.random() < 0.01:
+                                food.spawn_poison(player_snake.segments)
+                                print("Poison food spawned")
+                    else:
+                        if not player_snake.is_paused:
+                            # 3. Expiry: Use the same current_time here
+                            if current_time - food.spawn_time > food.duration:
+                                food.poison_active = False
+                                food.poison_rect.topleft = (-100, -100)
+                                food.last_expiry_time = current_time # Set the cooldown start
+                                print("Poison food expired")
 
                     # 1. TRIGGER DEATH (Only when touching)
                     if player_snake.head.colliderect(boss_hitbox) and alien_boss.health > 0 and not alien_boss.is_spawning:
-                        if current_time - alien_boss.last_hit_time > alien_boss.hit_cooldown:
-                            alien_boss.health -= 1
-                            alien_boss.last_hit_time = current_time
-                            sounds.play("boss_dmg")
-                        if alien_boss.health > 0:
-                            pot_x = random.randint(1, (SCREEN_WIDTH // BLOCK_SIZE) - 2) * BLOCK_SIZE
-                            pot_y = random.randint(1, (SCREEN_HEIGHT // BLOCK_SIZE) - 2) * BLOCK_SIZE
-                            
-                            # Check if new position is within the Screen
-                            alien_boss.apply_target_with_boundaries(pot_x, pot_y)
-
-                            # Teleport to new position
-                            alien_boss.rect.x = alien_boss.target_x
-                            alien_boss.rect.y = alien_boss.target_y
+                        result = alien_boss.take_damage(current_time)
+                        if result == "HIT":
+                            sounds.play("dmg")
 
                             if len(player_snake.segments) > 5:
                                 for _ in range(3):
                                     player_snake.segments.pop()
-                        #print(f"BOSS HIT! Health remaining: {alien_boss.health}")
-                        if alien_boss.health <= 0 and not alien_boss.is_dying:
-                            alien_boss.is_dying = True
-                            alien_boss.death_timer = pygame.time.get_ticks()
-                            boss_killed += 1
-                            music.stop()
-                            sounds.play("scream")
-                            sounds.play("explosion")
-                            # --- THE CLEANUP LOGIC ---
-                        # 2. THE CLEANUP (OUTSIDE the collision check!)
+                        elif result == "KILLED":
+                            handle_boss_death()
+
                     # This must be indented at the same level as "if boss_active"
                     if alien_boss.is_dying:
                         if pygame.time.get_ticks() - alien_boss.death_timer > 2000:
-                            boss_active = False      
+                            boss_active = False
                             alien_boss.is_dying = False
                             alien_boss.intro_triggered = False
                             alien_boss.boss_alive = False
                             alien_boss.shurikens.clear()
+                            projectiles.clear()
                             alien_boss.reset(boss_killed) # Important to reset for next wave!
                             print(f"CLEANUP COMPLETE! Ready for next milestone. Boss status: {boss_active}")
                     #print(f"VICTORY! The Alien has retreated!")
@@ -371,6 +398,19 @@ while running:
                                 player_snake.segments.pop()
                                 # 2. Cleanup: Remove the shuriken that hit us
                                 alien_boss.shurikens.remove(s)
+                    # Update projectiles
+                    for p in projectiles[:]:  # Using [:] creates a copy so we can remove items safely
+                        p.update()
+                        if p.rect.colliderect(boss_hitbox):
+                            result = alien_boss.take_damage(current_time)
+                            if result == "HIT":
+                                projectiles.remove(p)
+                                sounds.play("dmg")
+                            elif result == "KILLED":
+                                projectiles.remove(p)
+                                handle_boss_death()
+                        if not p.active:
+                            projectiles.remove(p)
 
                 # Game Over
                 if is_game_over(player_snake, walls, alien_boss, game_mode, score.score):
@@ -422,6 +462,8 @@ while running:
                     #pygame.draw.rect(screen, (255, 0, 0), alien_boss.rect.inflate(-30, -30), 2)
                     for s in alien_boss.shurikens:
                         s.draw(screen)
+                    for p in projectiles:
+                        p.draw(screen)
                 pygame.display.update()
 
                 # 4. Control speed

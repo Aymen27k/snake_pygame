@@ -7,6 +7,7 @@ class Alien:
     def __init__(self, screen_width, screen_height, level, block_size):
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.block_size = block_size
         self.boss_alive = True
         self.is_spawning = True
         self.intro_triggered = False
@@ -266,3 +267,25 @@ class Alien:
         else:
             self.is_spawning = False # Turn off the "spawning" state once time is up
         
+
+    def take_damage(self, current_time):
+        if current_time - self.last_hit_time > self.hit_cooldown and not self.is_dying:
+            self.health -= 1
+            self.last_hit_time = current_time
+            
+            # Check for Death
+            if self.health <= 0:
+                self.is_dying = True
+                self.death_timer = current_time
+                # Return a special value or just handle sounds inside here
+                return "KILLED"
+            
+            # Teleport if still alive
+            pot_x = random.randint(1, (self.screen_width // self.block_size) - 2) * self.block_size
+            pot_y = random.randint(1, (self.screen_height // self.block_size) - 2) * self.block_size
+            self.apply_target_with_boundaries(pot_x, pot_y)
+            self.rect.x = self.target_x
+            self.rect.y = self.target_y
+
+            return "HIT"
+        return "COOLDOWN"

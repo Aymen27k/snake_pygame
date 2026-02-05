@@ -32,6 +32,7 @@ class Scoreboard:
             self.color
         )
         screen.blit(score_text, self.position)
+
         # If paused, draw big "PAUSED" in the center
         if snake.is_paused:
             # --- THE BLINK TRIGGER ---
@@ -46,7 +47,15 @@ class Scoreboard:
                         self.screen_height // 2 - pause_text.get_height() // 2
                     )
                 )
-
+        for i in range(snake.poison_ammo):
+            # Calculate horizontal spacing
+            icon_x = 25 + (i * 25)
+            icon_y = 60 # Place it slightly below the score area
+            
+            # Draw a small purple circle or use a sprite if you passed it in
+            pygame.draw.circle(screen, (128, 0, 128), (icon_x, icon_y), 7)
+            # Optional: Add a small white "shine" to the ammo icon
+            pygame.draw.circle(screen, (200, 100, 255), (icon_x - 2, icon_y - 2), 2)
 
 
     def save_high_score(self, score, game_mode, filename="highscore.json"):

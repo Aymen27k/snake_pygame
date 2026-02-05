@@ -11,6 +11,7 @@ class Snake:
         self.segments: list[pygame.Rect] = []
         self.direction = "RIGHT"
         self.max_snake_length = float("inf")
+        self.poison_ammo = 0
         self.create_snake()
         self.head = self.segments[0]
         self.tail = self.segments[-1]
