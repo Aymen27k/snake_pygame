@@ -24,8 +24,12 @@ class Scoreboard:
         self.game_mode = game_mode
         self.high_score = self.load_high_score(game_mode)
 
-    def draw(self, screen, snake):
+    def draw(self, screen, snake, HUD_HEIGHT):
         # Draw score + high score
+        # Draw the HUD background strip
+        pygame.draw.rect(screen, (20, 20, 20), (0, 0, self.screen_width, HUD_HEIGHT))
+        # Add a thin gray line at the bottom to separate it from the grass
+        pygame.draw.line(screen, (50, 50, 50), (0, HUD_HEIGHT), (self.screen_width, HUD_HEIGHT), 2)
         score_text = self.font.render(
             f"Score: {self.score} High Score: {self.high_score}",
             True,
@@ -50,7 +54,7 @@ class Scoreboard:
         for i in range(snake.poison_ammo):
             # Calculate horizontal spacing
             icon_x = 25 + (i * 25)
-            icon_y = 60 # Place it slightly below the score area
+            icon_y = 30 # Place it slightly below the score area
             
             # Draw a small purple circle or use a sprite if you passed it in
             pygame.draw.circle(screen, (128, 0, 128), (icon_x, icon_y), 7)

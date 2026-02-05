@@ -12,7 +12,9 @@ from musicmanager import MusicManager
 
 #Config
 SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_HEIGHT = 660
+HUD_HEIGHT = 60
+NO_HUD = 0
 BLOCK_SIZE = 20
 ALIEN_WIDTH = 5
 direction= "RIGHT"
@@ -42,15 +44,15 @@ pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Snake Game | Made by AYMEN")
 clock = pygame.time.Clock()
-player_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT)
-food = Food(SCREEN_WIDTH, SCREEN_HEIGHT, player_snake.segments)
-walls = Walls(SCREEN_WIDTH, SCREEN_HEIGHT)
+player_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT)
+food = Food(SCREEN_WIDTH, SCREEN_HEIGHT, player_snake.segments, HUD_HEIGHT)
+walls = Walls(SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT)
 score = Scoreboard(SCREEN_WIDTH, SCREEN_HEIGHT, game_mode)
-bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
-game_over_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/snake_game_over.png")
-new_high_score_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, bg_path="assets/new_high_score.png")
-menu_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT)
-alien_boss = Alien(SCREEN_WIDTH, SCREEN_HEIGHT, boss_killed, BLOCK_SIZE)
+bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT)
+game_over_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, bg_path="assets/snake_game_over.png")
+new_high_score_bg = Background(screen, SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, bg_path="assets/new_high_score.png")
+menu_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT)
+alien_boss = Alien(SCREEN_WIDTH, SCREEN_HEIGHT, boss_killed, BLOCK_SIZE, HUD_HEIGHT)
 sounds = SoundManager()
 music = MusicManager()
 
@@ -68,10 +70,10 @@ def menu(screen, font, player_snake):
     while running:
         # Menu rendering
         screen.fill((0,0,0))
-        bg.draw()
-        walls.draw(screen, "wrap")
+        bg.draw(is_menu=True)
+        walls.draw(screen, mode="wrap", y_offset=NO_HUD)
         menu_snake.move_auto(screen)
-        walls.check_collision(menu_snake, SCREEN_WIDTH, SCREEN_HEIGHT, "wrap")
+        walls.check_collision(menu_snake, SCREEN_WIDTH, SCREEN_HEIGHT, mode="wrap", override_hud=NO_HUD)
 
         # Draw title
         title = font.render("Snake Game Menu", True, (255,255,255))
@@ -119,9 +121,9 @@ def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, count
         screen.fill((0,0,0))
 
         if is_new_high_score:
-            new_high_score_bg.draw()
+            new_high_score_bg.draw(is_menu=True)
         else:
-            game_over_bg.draw()
+            game_over_bg.draw(is_menu=True)
         # Create a small "Summary Box" on the screen
         stats_font = pygame.font.SysFont("Courier New", 28, bold=True) # Courier looks 'techy'
 
@@ -435,7 +437,6 @@ while running:
                         reset_game()
                         direction = "RIGHT"
                     else:
-                        print("Returning to Menu...")
                         playing = False
                         game_state = "menu"
 
@@ -448,7 +449,7 @@ while running:
                 walls.draw(screen, game_mode)
                 food.draw(screen, player_snake)
                 player_snake.draw(screen, direction)
-                score.draw(screen, player_snake)
+                score.draw(screen, player_snake, HUD_HEIGHT)
                 if boss_active:
                     if not alien_boss.intro_triggered:
                         alien_boss.spawn_timer = pygame.time.get_ticks()

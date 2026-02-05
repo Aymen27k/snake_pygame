@@ -4,10 +4,11 @@ import shuriken
 from sprite import SpriteManager
 
 class Alien:
-    def __init__(self, screen_width, screen_height, level, block_size):
+    def __init__(self, screen_width, screen_height, level, block_size, hud_height):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.block_size = block_size
+        self.hud_height = hud_height
         self.boss_alive = True
         self.is_spawning = True
         self.intro_triggered = False
@@ -38,7 +39,9 @@ class Alien:
 
         # Position
         self.x = random.randrange(0, screen_width - self.boss_size, block_size)
-        self.y = random.randrange(0, screen_height - self.boss_size, block_size)
+        self.y = random.randrange(self.hud_height + self.block_size, 
+                          self.screen_height - self.boss_size, 
+                          self.block_size)
         self.rect = self.image.get_rect(topleft=(self.x, self.y))
         self.target_x = self.x
         self.target_y = self.y
@@ -68,7 +71,9 @@ class Alien:
 
         # Randomize position
         self.x = random.randrange(0, self.screen_width - self.boss_size, self.block_size)
-        self.y = random.randrange(0, self.screen_height - self.boss_size, self.block_size)
+        self.y = random.randrange(self.hud_height + self.block_size, 
+                          self.screen_height - self.boss_size, 
+                          self.block_size)
         self.rect = self.image.get_rect(topleft=(self.x, self.y))
         self.target_x = self.x
         self.target_y = self.y
@@ -191,7 +196,7 @@ class Alien:
         self.target_x = max(0, min(new_x, self.screen_width - self.boss_size))
         
         # This 'clamps' the Y between 0 and the Bottom Edge
-        self.target_y = max(0, min(new_y, self.screen_height - self.boss_size))
+        self.target_y = max(self.hud_height, min(new_y, self.screen_height - self.boss_size))
 
 
     def throw_shurikens(self):
@@ -213,8 +218,9 @@ class Alien:
         for s in self.shurikens:
             s.update()
 
-        self.shurikens = [s for s in self.shurikens if -50 < s.rect.x < self.screen_width + 50
-                      and -50 < s.rect.y < self.screen_height + 50]
+        self.shurikens = [s for s in self.shurikens if 
+                  -50 < s.rect.x < self.screen_width + 50 and 
+                  self.hud_height < s.rect.y < self.screen_height + 50]
 
     def draw_health_bar(self, screen):
         if not self.is_spawning and not self.is_dying:
@@ -260,13 +266,13 @@ class Alien:
         # --- 1. THE SCREEN FLASH (Intro) ---
         if elapsed < 1500: # Flash for 1.5 seconds
             if (current_time // 200) % 2 == 0:
-                flash_overlay = pygame.Surface((self.screen_width, self.screen_height))
-                flash_overlay.fill((255, 0, 0)) 
-                flash_overlay.set_alpha(70)     
-                screen.blit(flash_overlay, (0, 0))
+                play_area_height = self.screen_height - self.hud_height
+                flash_overlay = pygame.Surface((self.screen_width, play_area_height))
+                flash_overlay.fill((255, 0, 0))
+                flash_overlay.set_alpha(70) 
+                screen.blit(flash_overlay, (0, self.hud_height))
         else:
-            self.is_spawning = False # Turn off the "spawning" state once time is up
-        
+            self.is_spawning = False # Turn off the "spawning" state once time is up        
 
     def take_damage(self, current_time):
         if current_time - self.last_hit_time > self.hit_cooldown and not self.is_dying:
@@ -279,10 +285,12 @@ class Alien:
                 self.death_timer = current_time
                 # Return a special value or just handle sounds inside here
                 return "KILLED"
-            
+
             # Teleport if still alive
             pot_x = random.randint(1, (self.screen_width // self.block_size) - 2) * self.block_size
-            pot_y = random.randint(1, (self.screen_height // self.block_size) - 2) * self.block_size
+            min_grid_y = (self.hud_height // self.block_size) + 1
+            max_grid_y = (self.screen_height // self.block_size) - 2
+            pot_y = random.randint(min_grid_y, max_grid_y) * self.block_size
             self.apply_target_with_boundaries(pot_x, pot_y)
             self.rect.x = self.target_x
             self.rect.y = self.target_y

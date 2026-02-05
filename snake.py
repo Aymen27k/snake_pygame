@@ -4,9 +4,10 @@ from sprite import SpriteManager
 
 
 class Snake:
-    def __init__(self, screen_width, screen_height, block_size=20) -> None:
+    def __init__(self, screen_width, screen_height, hud_height, block_size=20) -> None:
         self.block_size = block_size
         self.screen_width = screen_width
+        self.hud_height = hud_height
         self.screen_height = screen_height
         self.segments: list[pygame.Rect] = []
         self.direction = "RIGHT"

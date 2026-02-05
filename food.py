@@ -4,10 +4,11 @@ import math
 from sprite import SpriteManager
 
 class Food:
-    def __init__(self, screen_width, screen_height, snake_segments, block_size=20):
+    def __init__(self, screen_width, screen_height, snake_segments, hud_height, block_size=20):
         self.block_size = block_size
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.hud_height = hud_height
         self.value = 0
         self.time = 0
         self.sparkle_timer = 0
@@ -50,7 +51,7 @@ class Food:
             # Keep food inside the playable area (avoid walls)
             grid_min_x = 1
             grid_max_x = (self.screen_width // self.block_size) - 2
-            grid_min_y = 1
+            grid_min_y = (self.hud_height // self.block_size) + 1
             grid_max_y = (self.screen_height // self.block_size) - 2
 
             random_x = random.randint(grid_min_x, grid_max_x) * self.block_size
@@ -129,12 +130,11 @@ class Food:
             screen.blit(scaled_sprite, (offset_x, offset_y))
             if self.poison_active:
                 time_left = self.duration - (pygame.time.get_ticks() - self.spawn_time)
-                # You can reuse your bounce/sparkle logic here too!
-                screen.blit(self.poison_sprite, (self.poison_rect.x, self.poison_rect.y))
-                # If less than 2 seconds left, start flickering
-                if time_left < 2000:
-                    # The % 200 creates a blink every 200ms
-                    if pygame.time.get_ticks() % 400 < 200:
-                        screen.blit(self.poison_sprite, self.poison_rect)
-                else:
+                
+                # Simple logic: only draw if not in the "off" part of a blink [cite: 2024-12-19]
+                should_draw = True
+                if time_left < 2000 and (pygame.time.get_ticks() % 400 < 200):
+                    should_draw = False
+                    
+                if should_draw:
                     screen.blit(self.poison_sprite, self.poison_rect)
