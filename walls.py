@@ -79,7 +79,7 @@ class Walls:
             if snake.head.top < effective_top:
                 snake.head.bottom = screen_height - self.block_size
             elif snake.head.bottom > screen_height - self.block_size:
-                snake.head.top = current_hud
+                snake.head.top = effective_top
             elif snake.head.left < self.block_size:
                 snake.head.right = screen_width - self.block_size
             elif snake.head.right > screen_width - self.block_size:

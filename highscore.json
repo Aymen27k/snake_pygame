@@ -1,4 +1,10 @@
 {
-    "wrap": 254,
-    "classic": 39
+  "wrap": {
+    "score": 256,
+    "name": "AYMEN"
+  },
+  "classic": {
+    "score": 3,
+    "name": "AYMEN"
+  }
 }

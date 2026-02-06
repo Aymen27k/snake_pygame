@@ -75,7 +75,9 @@ class Food:
     def spawn_poison(self, snake_segments):
         while True:
             grid_min_x, grid_max_x = 1, (self.screen_width // self.block_size) - 2
-            grid_min_y, grid_max_y = 1, (self.screen_height // self.block_size) - 2
+            grid_min_y = (self.hud_height // self.block_size) + 1
+            playable_height = self.screen_height - self.hud_height
+            grid_max_y = ((self.hud_height + playable_height) // self.block_size) - 2
 
             rx = random.randint(grid_min_x, grid_max_x) * self.block_size
             ry = random.randint(grid_min_y, grid_max_y) * self.block_size
