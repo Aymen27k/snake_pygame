@@ -226,10 +226,11 @@ class Alien:
         if not self.is_spawning and not self.is_dying:
             bar_width = 50
             bar_height = 6
+            safe_zone = self.hud_height + self.block_size
             x = self.rect.centerx - (bar_width // 2)
             
             # --- ADAPTIVE POSITIONING ---
-            if self.rect.top < 50:
+            if self.rect.top < safe_zone:
                 y = self.rect.bottom + 15
             else:
                 y = self.rect.top - 15

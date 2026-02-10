@@ -1,8 +1,9 @@
 import pygame
 
 class SoundManager:
-    def __init__(self):
+    def __init__(self, is_enabled):
         pygame.mixer.init()
+        self.enabled = is_enabled
         self.sounds = {
             "eat": pygame.mixer.Sound("assets/sfx/eat.mp3"),
             "game_over": pygame.mixer.Sound("assets/sfx/game_over.mp3"),
@@ -14,8 +15,14 @@ class SoundManager:
             "poison_get": pygame.mixer.Sound("assets/sfx/poison_get.mp3"),
             "shoot": pygame.mixer.Sound("assets/sfx/shoot.mp3"),
         }
+    def toggle(self):
+        self.enabled = not self.enabled
+        if not self.enabled:
+            return self.enabled
 
     def play(self, name):
+        if not self.enabled:
+            return
         if name in self.sounds:
             self.sounds[name].play()
 

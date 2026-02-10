@@ -2,14 +2,11 @@ import json
 import pygame
 from sprite import SpriteManager
 
-
-
 class HUD:
-    def __init__(self, screen_width, screen_height, game_mode = None, font_size=30):
+    def __init__(self, screen_width, screen_height, font_size=30):
         self.score = 0
-        self.game_mode = game_mode
-        self.high_score = self.load_high_score(self.game_mode)
-        self.high_score_name = ""
+        self.high_score = 0
+        self.high_score_name = "---"
         self.font = pygame.font.SysFont("Arial", font_size, bold=True)
         self.color = (255, 255, 255)  # white
         self.screen_width = screen_width
@@ -30,10 +27,6 @@ class HUD:
 
     def reset(self):
         self.score = 0
-
-    def set_mode(self, game_mode):
-        self.game_mode = game_mode
-        self.high_score = self.load_high_score(game_mode)
 
     def draw(self, screen, snake, HUD_HEIGHT, boss_killed):
         # 1. Color logic (Gold if beating record)
@@ -117,41 +110,6 @@ class HUD:
                 screen.blit(self.dead_alien, (self.screen_width - 120, icon_y_boss - self.dead_alien.get_height() // 2))
                 screen.blit(boss_text, (self.screen_width - 90, icon_y_boss - boss_text.get_height() // 2))
 
-
-    def save_high_score(self, score, name, game_mode, filename="highscore.json"):
-        try:
-            with open(filename, "r", encoding="UTF-8") as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            data = {}
-
-        # Store both name and score
-        data[game_mode] = {"score": score, "name": name}
-
-        with open(filename, "w", encoding="UTF-8") as f:
-            json.dump(data, f, indent=4)
-
-        self.high_score = score
-        self.high_score_name = name
-
-    def load_high_score(self, game_mode, filename="highscore.json"):
-        try:
-            with open(filename, "r", encoding="UTF-8") as f:
-                data = json.load(f)
-                record = data.get(game_mode, 0)
-                
-                # CHECK: Is it a dictionary (New) or an integer (Old)?
-                if isinstance(record, dict):
-                    self.high_score_name = record.get("name", "---")
-                    return record.get("score", 0)
-                else:
-                    # It's an old integer! Convert it gracefully
-                    self.high_score_name = "LEGEND" # Give your old score a cool name!
-                    return record 
-
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.high_score_name = "---"
-            return 0
     def is_new_high_score(self):
         """Returns True if the current session score is strictly greater than the record."""
         # We compare against self.high_score which was set during load_high_score()

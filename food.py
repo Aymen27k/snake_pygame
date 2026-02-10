@@ -41,7 +41,7 @@ class Food:
 
     def reset_poison(self):
         self.poison_active = False
-        self.poison_rect.x = -100 # Move the "Ghost" away [cite: 2024-12-19]
+        self.poison_rect.x = -100
         self.poison_rect.y = -100
         self.last_expiry_time = 0
         self.spawn_time = 0
