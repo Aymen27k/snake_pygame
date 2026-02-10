@@ -24,10 +24,10 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconsole --onefile --add-data "assets;assets" --add-data "game_data.json;." main.py
+          pyinstaller --noconsole --onefile --name "Snake_By_Aymen" --add-data "assets;assets" --add-data "game_data.json;." main.py
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SnakeGame-Windows
-          path: dist/main.exe
+          name: Snake_By_Aymen_Release
+          path: dist/Snake_By_Aymen.exe

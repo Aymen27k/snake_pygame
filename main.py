@@ -328,8 +328,6 @@ while running:
                         if not boss_active:
                             boss_active = True
                             boss_milestones.pop(0)
-                            print(f"Boss {boss_killed + 1} Triggered!")
-                            print(f"DEBUG: Boss #{boss_killed} spawned with Speed: {alien_boss.move_speed}, HP: {alien_boss.health} Fire rate: {alien_boss.shoot_cooldown}")
                 else:
                     # Optional: If the list IS empty, give it a new goal!
                     # This makes the game infinite.
@@ -374,9 +372,6 @@ while running:
                                 direction = "LEFT"
                             elif event.key == pygame.K_RIGHT and direction != "LEFT":
                                 direction = "RIGHT"
-                            elif event.key == pygame.K_b: # Press 'B' for Boss
-                                hud.score += 10
-                                print("Score cheat detected ! You gain 10 points")
                             elif event.key == pygame.K_SPACE and player_snake.poison_ammo > 0:
                                 # Create a new shot at the snake's head position
                                 new_shot = PoisonProjectile(player_snake.head.x, player_snake.head.y, direction)
@@ -417,15 +412,12 @@ while running:
                             # 2. Random Chance: 1% chance per frame
                             if random.random() < 0.01:
                                 food.spawn_poison(player_snake.segments)
-                                print("Poison food spawned")
                     else:
                         if not player_snake.is_paused:
                             # 3. Expiry: Use the same current_time here
                             if current_time - food.spawn_time > food.duration:
                                 food.poison_active = False
                                 food.poison_rect.topleft = (-100, -100)
-                                food.last_expiry_time = current_time # Set the cooldown start
-                                print("Poison food expired")
 
                     # 1. TRIGGER DEATH (Only when touching)
                     if player_snake.head.colliderect(boss_hitbox) and alien_boss.health > 0 and not alien_boss.is_spawning:
@@ -434,7 +426,6 @@ while running:
                             if boss_result == "HIT":
                                 sounds.play("boss_dmg")
                                 snake_result = player_snake.take_damage(current_time, amount=3)
-                                print(f"Snake has : {len(player_snake.segments)} Body parts")
                                 if snake_result == "KILLED":
                                     #game_over = True
                                     pass
@@ -453,7 +444,6 @@ while running:
                             alien_boss.shurikens.clear()
                             projectiles.clear()
                             alien_boss.reset(boss_killed) # Important to reset for next wave!
-                            print(f"CLEANUP COMPLETE! Ready for next milestone. Boss status: {boss_active}")
                     #print(f"VICTORY! The Alien has retreated!")
                     # Inside your main loop (Update Section)
                     for s in alien_boss.shurikens[:]:
