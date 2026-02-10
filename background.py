@@ -1,7 +1,8 @@
 import pygame
+from path_util import resource_path
 
 class Background:
-    def __init__(self, screen, screen_width, screen_height, hud_height, bg_path="assets/grass_bg.png", block_size=20):
+    def __init__(self, screen, screen_width, screen_height, hud_height, bg_path=resource_path("assets/grass_bg.png"), block_size=20):
         self.screen = screen
         self.block_size = block_size
         self.screen_width = screen_width
