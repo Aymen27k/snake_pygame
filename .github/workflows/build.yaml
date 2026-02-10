@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build Game - Windows and Linux
 
 on:
   push:
@@ -6,7 +6,10 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -22,12 +25,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install pygame pyinstaller
 
-      - name: Build with PyInstaller
+      - name: Build Windows Version
+        if: matrix.os == 'windows-latest'
         run: |
-          pyinstaller --noconsole --onefile --name "Snake_By_Aymen" --add-data "assets;assets" --add-data "game_data.json;." main.py
+          pyinstaller --noconsole --onefile --name "Snake_By_Aymen_Win" --icon="assets/icon.ico" --add-data "assets;assets" --add-data "game_data.json;." main.py
+
+      - name: Build Linux Version
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pyinstaller --noconsole --onefile --name "Snake_By_Aymen_Linux" --icon="assets/icon.png" --add-data "assets:assets" --add-data "game_data.json:." main.py
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Snake_By_Aymen_Release
-          path: dist/Snake_By_Aymen.exe
+          name: SnakeGame-${{ matrix.os }}
+          path: |
+            dist/Snake_By_Aymen_Win.exe
+            dist/Snake_By_Aymen_Linux
