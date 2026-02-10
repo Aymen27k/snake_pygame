@@ -1,6 +1,7 @@
 import random
 import pygame
 from sprite import SpriteManager
+from path_util import resource_path
 
 
 class Snake:
@@ -21,7 +22,7 @@ class Snake:
         self.is_dead = False
         self.last_damage_time = -1000
         self.damage_cooldown = 500
-        sprites = SpriteManager("assets/snake2.png", block_size=self.block_size)
+        sprites = SpriteManager(resource_path("assets/snake2.png"), block_size=self.block_size)
         self.head_right = sprites.get_sprite(col=4, row=3)
         self.head_left = sprites.get_sprite(col=2, row=3)
         self.head_up = sprites.get_sprite(col=1, row=3)

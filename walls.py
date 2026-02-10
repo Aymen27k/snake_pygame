@@ -1,6 +1,7 @@
 import pygame
 from typing import Optional
 from sprite import SpriteManager
+from path_util import resource_path
 
 class Walls:
     def __init__(self, screen_width, screen_height, hud_height, block_size=20):
@@ -8,7 +9,7 @@ class Walls:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.hud_height = hud_height
-        sprites = SpriteManager("assets/snake2.png", block_size=self.block_size)
+        sprites = SpriteManager(resource_path("assets/snake2.png"), block_size=self.block_size)
         # Brick walls
         self.horizontal_wall = sprites.get_sprite(col=12, row=0)
         self.vertical_wall = sprites.get_sprite(col=8, row=2)

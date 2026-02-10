@@ -1,6 +1,7 @@
 import json
 import pygame
 from sprite import SpriteManager
+from path_util import resource_path
 
 class HUD:
     def __init__(self, screen_width, screen_height, font_size=30):
@@ -12,13 +13,13 @@ class HUD:
         self.screen_width = screen_width
         self.screen_height = screen_height
         # Highscore Medal Icon
-        self.medal_icon = pygame.image.load("./assets/medal.png").convert_alpha()
+        self.medal_icon = pygame.image.load(resource_path("./assets/medal.png")).convert_alpha()
         self.medal_icon = pygame.transform.scale(self.medal_icon, (35, 35))
         # Thunder speed Icon
-        self.thunder_icon = pygame.image.load("./assets/speed.png").convert_alpha()
+        self.thunder_icon = pygame.image.load(resource_path("./assets/speed.png")).convert_alpha()
         self.thunder_icon = pygame.transform.scale(self.thunder_icon, (20, 20))
         # Dead Alien Icon
-        self.dead_alien = pygame.image.load("./assets/dead_alien2.png").convert_alpha()
+        self.dead_alien = pygame.image.load(resource_path("./assets/dead_alien2.png")).convert_alpha()
         self.dead_alien = pygame.transform.scale(self.dead_alien, (35, 35))
 
 
@@ -31,7 +32,7 @@ class HUD:
     def draw(self, screen, snake, HUD_HEIGHT, boss_killed):
         # 1. Color logic (Gold if beating record)
         display_color = (255, 215, 0) if self.score > self.high_score else self.color
-        
+
         # 2. Draw HUD Background
         pygame.draw.rect(screen, (15, 15, 15), (0, 0, self.screen_width, HUD_HEIGHT))
         pygame.draw.line(screen, (60, 60, 60), (0, HUD_HEIGHT), (self.screen_width, HUD_HEIGHT), 2)

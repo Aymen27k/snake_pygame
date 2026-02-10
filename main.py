@@ -11,6 +11,7 @@ from projectile import PoisonProjectile
 from soundmanager import SoundManager
 from musicmanager import MusicManager
 from data_manager import DataManager
+from path_util import resource_path
 
 #Config
 direction= "RIGHT"
@@ -54,14 +55,14 @@ music = MusicManager(is_enabled=is_music_muted)
 
 
 # UI elements
-icon_music_on = pygame.image.load("assets/music.png").convert_alpha()
+icon_music_on = pygame.image.load(resource_path("assets/music.png")).convert_alpha()
 icon_music_on = pygame.transform.scale(icon_music_on, (35, 35))
-icon_music_off = pygame.image.load("assets/music-off.png").convert_alpha()
+icon_music_off = pygame.image.load(resource_path("assets/music-off.png")).convert_alpha()
 icon_music_off = pygame.transform.scale(icon_music_off, (35, 35))
 
-icon_sfx_on = pygame.image.load("assets/sound-on.png").convert_alpha()
+icon_sfx_on = pygame.image.load(resource_path("assets/sound-on.png")).convert_alpha()
 icon_sfx_on = pygame.transform.scale(icon_sfx_on, (35, 35))
-icon_sfx_off = pygame.image.load("assets/no-sound.png").convert_alpha()
+icon_sfx_off = pygame.image.load(resource_path("assets/no-sound.png")).convert_alpha()
 icon_sfx_off = pygame.transform.scale(icon_sfx_off, (35, 35))
 
 

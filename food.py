@@ -2,6 +2,7 @@ import pygame
 import random
 import math
 from sprite import SpriteManager
+from path_util import resource_path
 
 class Food:
     def __init__(self, screen_width, screen_height, snake_segments, hud_height, block_size=20):
@@ -16,7 +17,7 @@ class Food:
         self.sparkle_pos = None
         self.sparkle_life = 0
 
-        sprites = SpriteManager("assets/snake2.png", block_size=self.block_size)
+        sprites = SpriteManager(resource_path("assets/snake2.png"), block_size=self.block_size)
         self.normal_foods = [
             sprites.get_sprite(6, 0),  # red apple
             sprites.get_sprite(6, 1),  # yellow apple

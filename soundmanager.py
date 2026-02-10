@@ -1,19 +1,20 @@
 import pygame
+from path_util import resource_path
 
 class SoundManager:
     def __init__(self, is_enabled):
         pygame.mixer.init()
         self.enabled = is_enabled
         self.sounds = {
-            "eat": pygame.mixer.Sound("assets/sfx/eat.mp3"),
-            "game_over": pygame.mixer.Sound("assets/sfx/game_over.mp3"),
-            "speed_up": pygame.mixer.Sound("assets/sfx/speed_up.mp3"),
-            "dmg": pygame.mixer.Sound("assets/sfx/dmg.mp3"),
-            "explosion": pygame.mixer.Sound("assets/sfx/explosion.mp3"),
-            "scream": pygame.mixer.Sound("assets/sfx/scream.mp3"),
-            "boss_dmg": pygame.mixer.Sound("assets/sfx/boss_dmg.mp3"),
-            "poison_get": pygame.mixer.Sound("assets/sfx/poison_get.mp3"),
-            "shoot": pygame.mixer.Sound("assets/sfx/shoot.mp3"),
+        "eat": pygame.mixer.Sound(resource_path("assets/sfx/eat.mp3")),
+        "game_over": pygame.mixer.Sound(resource_path("assets/sfx/game_over.mp3")),
+        "speed_up": pygame.mixer.Sound(resource_path("assets/sfx/speed_up.mp3")),
+        "dmg": pygame.mixer.Sound(resource_path("assets/sfx/dmg.mp3")),
+        "explosion": pygame.mixer.Sound(resource_path("assets/sfx/explosion.mp3")),
+        "scream": pygame.mixer.Sound(resource_path("assets/sfx/scream.mp3")),
+        "boss_dmg": pygame.mixer.Sound(resource_path("assets/sfx/boss_dmg.mp3")),
+        "poison_get": pygame.mixer.Sound(resource_path("assets/sfx/poison_get.mp3")),
+        "shoot": pygame.mixer.Sound(resource_path("assets/sfx/shoot.mp3")),
         }
     def toggle(self):
         self.enabled = not self.enabled

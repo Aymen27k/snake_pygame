@@ -2,6 +2,7 @@ import pygame
 import random
 import shuriken
 from sprite import SpriteManager
+from path_util import resource_path
 
 class Alien:
     def __init__(self, screen_width, screen_height, level, block_size, hud_height):
@@ -26,12 +27,12 @@ class Alien:
         self.death_timer = 0
 
         # Graphics
-        self.image = pygame.image.load("assets/alien.png").convert_alpha()
+        self.image = pygame.image.load(resource_path("assets/alien.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.boss_size, self.boss_size))
         self.image.set_colorkey((0, 0, 0))
 
         # Projectiles
-        sprites = SpriteManager("assets/snake2.png", block_size=self.block_size)
+        sprites = SpriteManager(resource_path("assets/snake2.png"), block_size=self.block_size)
         self.shuriken_image = sprites.get_sprite(col=6, row=6)
         self.shurikens = []
         self.last_shot_time = 0
