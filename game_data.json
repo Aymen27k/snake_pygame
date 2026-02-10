@@ -1,0 +1,16 @@
+{
+    "settings": {
+        "music_on": true,
+        "sfx_on": true
+    },
+    "high_scores": {
+        "wrap": {
+            "score": 5,
+            "name": "AYMEN"
+        },
+        "classic": {
+            "score": 6,
+            "name": "GEMINI"
+        }
+    }
+}
