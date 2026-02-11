@@ -11,7 +11,8 @@ class Snake:
         self.hud_height = hud_height
         self.screen_height = screen_height
         self.segments: list[pygame.Rect] = []
-        self.direction = "RIGHT"
+        self.direction_queue = []
+        self.current_direction = "RIGHT"
         self.max_snake_length = float("inf")
         self.poison_ammo = 0
         self.create_snake()
@@ -44,7 +45,8 @@ class Snake:
         self.create_snake() # Re-centers the snake and resets segments
         self.head = self.segments[0]
         self.tail = self.segments[-1]
-        self.direction = "RIGHT"
+        self.direction_queue = []
+        self.current_direction = "RIGHT"
         self.is_dead = False
         self.should_grow = False
         self.poison_ammo = 0
@@ -128,7 +130,7 @@ class Snake:
         if random.randint(0, 100) < 10:  # 10% chance per frame
             new_direction = random.choice(["UP", "DOWN", "LEFT", "RIGHT"])
             if not self.is_opposite_direction(new_direction):
-                self.direction = new_direction
+                self.current_direction = new_direction
         # Menu snake random Growth
         if len(self.segments) < self.max_snake_length:
             random_growth = random.randint(0, 100) < 2
@@ -136,8 +138,8 @@ class Snake:
             random_growth = False
 
         # Move in current direction
-        self.move(self.direction, growth=random_growth)
-        self.draw(screen, self.direction)
+        self.move(self.current_direction, growth=random_growth)
+        self.draw(screen, self.current_direction)
     def is_opposite_direction(self, new_direction):
         opposites = {
             "UP" : "DOWN",
@@ -145,7 +147,7 @@ class Snake:
             "LEFT" : "RIGHT",
             "RIGHT" : "LEFT"
         }
-        return opposites[self.direction] == new_direction
+        return opposites[self.current_direction] == new_direction
 
     def take_damage(self, current_time, amount=1):
         if current_time - self.last_damage_time > self.damage_cooldown and not self.is_dead:

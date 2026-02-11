@@ -14,7 +14,6 @@ from data_manager import DataManager
 from path_util import resource_path
 
 #Config
-direction= "RIGHT"
 running = True
 playing = False
 game_over = False
@@ -171,7 +170,7 @@ def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, count
 
         left_x = SCREEN_WIDTH // 2 - 180
         right_x = SCREEN_WIDTH // 2 + 50
-        stats_y = SCREEN_HEIGHT // 2 + 150
+        stats_y = SCREEN_HEIGHT // 2 + 170
 
         # Render the lines
         score_text = stats_font.render(f"SCORE: {hud.score}", True, (0, 255, 0))
@@ -228,7 +227,7 @@ def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, count
     return player_chose
 
 def reset_game():
-    global game_start_time, boss_killed, total_paused_time, pause_start_tick, boss_active, boss_milestones, game_mode
+    global game_start_time, boss_killed, total_paused_time, pause_start_tick, boss_active, BOSS_MILESTONES, game_mode
     record_score, record_name = data_store.get_high_score(game_mode)
     hud.high_score = record_score
     hud.high_score_name = record_name
@@ -236,7 +235,9 @@ def reset_game():
     total_paused_time = 0
     pause_start_tick = 0
     game_start_time = pygame.time.get_ticks()
-    boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
+    BOSS_MILESTONES = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
+    boss_active = False
+    boss_killed = 0
 
     # Object Resets - MUCH CLEANER!
     player_snake.reset()
@@ -245,8 +246,6 @@ def reset_game():
     food.reset_poison()
 
     # States & UI Resets
-    boss_active = False
-    boss_killed = 0
     projectiles.clear()
     hud.reset()
 
@@ -256,8 +255,7 @@ def reset_game():
     music.play("gameplay")
 
 def handle_boss_death():
-    global boss_killed, boss_active
-    boss_active = False
+    global boss_killed
     boss_killed += 1
     music.stop()
     sounds.play("scream")
@@ -294,20 +292,7 @@ while running:
             if game_state == "playing":
                 music.play("gameplay")
                 # Entry Point (Game reset)
-                player_snake.is_paused = False
-                boss_active = False
-                boss_killed = 0
-                total_paused_time = 0
-                pause_start_tick = 0
-                player_snake.poison_ammo = 0
-                projectiles.clear()  # clears all poison food sprites
-                boss_milestones = [30, 60, 90, 120, 150, 190, 250, 300, 400, 500]
-                player_snake.create_snake()
-                food.reset_poison()
-                alien_boss.reset(boss_killed)
-                hud.reset()
-                game_start_time = pygame.time.get_ticks()
-                direction = "RIGHT"
+                reset_game()
             elif game_state == "resume":
                 # Resume existing game
                 if boss_active and alien_boss.boss_alive and not alien_boss.is_dying:
@@ -317,21 +302,21 @@ while running:
 
             playing = True
 
-
             while playing:
                 # Check IF the list is empty BEFORE trying to grab the first number
-                if boss_milestones:
-                    next_goal = boss_milestones[0]
+                if BOSS_MILESTONES:
+                    next_goal = BOSS_MILESTONES[0]
+
 
                     # Now check the score
                     if hud.score >= next_goal:
-                        if not boss_active:
+                        if not boss_active and not alien_boss.is_dying:
                             boss_active = True
-                            boss_milestones.pop(0)
+                            BOSS_MILESTONES.pop(0)
                 else:
                     # Optional: If the list IS empty, give it a new goal!
                     # This makes the game infinite.
-                    boss_milestones.append(hud.score + 50)
+                    BOSS_MILESTONES.append(hud.score + 50)
                 game_speed = min(10 + (hud.score // 10), 20)
                 if game_speed > LAST_SPEED:
                     sounds.play("speed_up")
@@ -362,29 +347,35 @@ while running:
                                 game_state = "menu"
                                 playing = False
 
-                        # 2. THE FIX: Only update direction if NOT paused
+                        # 2. Only update direction if NOT paused
                         if not player_snake.is_paused:
-                            if event.key == pygame.K_UP and direction != "DOWN":
-                                direction = "UP"
-                            elif event.key == pygame.K_DOWN and direction != "UP":
-                                direction = "DOWN"
-                            elif event.key == pygame.K_LEFT and direction != "RIGHT":
-                                direction = "LEFT"
-                            elif event.key == pygame.K_RIGHT and direction != "LEFT":
-                                direction = "RIGHT"
-                            elif event.key == pygame.K_SPACE and player_snake.poison_ammo > 0:
+                            last_planned = player_snake.direction_queue[-1] if player_snake.direction_queue else player_snake.current_direction
+                            if event.key == pygame.K_UP and last_planned != "DOWN":
+                                player_snake.direction_queue.append("UP")
+                            elif event.key == pygame.K_DOWN and last_planned != "UP":
+                                player_snake.direction_queue.append("DOWN")
+                            elif event.key == pygame.K_LEFT and last_planned != "RIGHT":
+                                player_snake.direction_queue.append("LEFT")
+                            elif event.key == pygame.K_RIGHT and last_planned != "LEFT":
+                                player_snake.direction_queue.append("RIGHT")
+                            player_snake.direction_queue = player_snake.direction_queue[:2]
+                            if event.key == pygame.K_SPACE and player_snake.poison_ammo > 0:
                                 # Create a new shot at the snake's head position
-                                new_shot = PoisonProjectile(player_snake.head.x, player_snake.head.y, direction)
+                                new_shot = PoisonProjectile(player_snake.head.x, player_snake.head.y, last_planned)
                                 projectiles.append(new_shot)
                                 player_snake.poison_ammo -= 1
                                 sounds.play("shoot")
                 # 2. Update game state
                 if not player_snake.is_paused:
+                    # Pulling the last direction out of the queue
+                    if player_snake.direction_queue:
+                        player_snake.current_direction = player_snake.direction_queue.pop(0)
+                    # Activating the boss
                     if boss_active and alien_boss.boss_alive:
                         alien_boss.update(player_snake.head.x, player_snake.head.y)
                         alien_boss.update_projectiles()
                     old_head_rect = player_snake.head.copy()
-                    player_snake.move(direction)
+                    player_snake.move(player_snake.current_direction)
                     if player_snake.head.colliderect(food.rect) or old_head_rect.colliderect(food.rect):
                         sounds.play("eat")
                         hud.increase(food.value)
@@ -503,7 +494,7 @@ while running:
                         # Continue ?
                         if continue_screen(screen, hud.font, new_record, time_string, boss_killed):
                             reset_game()
-                            direction = "RIGHT"
+                            player_snake.current_direction = "RIGHT"
                         else:
                             playing = False
                             game_state = "menu"
@@ -516,7 +507,7 @@ while running:
                 bg.draw()
                 walls.draw(screen, game_mode)
                 food.draw(screen, player_snake)
-                player_snake.draw(screen, direction)
+                player_snake.draw(screen, player_snake.current_direction)
                 hud.draw(screen, player_snake, HUD_HEIGHT, boss_killed)
                 if boss_active:
                     if not alien_boss.intro_triggered:
