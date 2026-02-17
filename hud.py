@@ -9,6 +9,8 @@ class HUD:
         self.high_score = 0
         self.high_score_name = "---"
         self.font = pygame.font.SysFont("Arial", font_size, bold=True)
+        self.large_font = pygame.font.SysFont("Arial", 45, bold=True)
+        self.small_font = pygame.font.SysFont("Arial", 22, bold=True)
         self.color = (255, 255, 255)  # white
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -40,28 +42,41 @@ class HUD:
         # 3. Render surfaces (Now including the Name)
         score_surf = self.font.render(f"Score: {self.score}", True, display_color)
         # Combine the Name and the Score number
+        label_surf = self.small_font.render("High Score:", True, (255, 255, 255))
         high_score_text = f"{self.high_score_name}: {self.high_score}"
-        high_val_surf = self.font.render(high_score_text, True, (255, 215, 0))
+        high_val_surf = self.small_font.render(high_score_text, True, (255, 215, 0))
 
         # 4. Calculate Total Width for perfect centering
-        gap = 15
+        gap = 20  # Increased gap slightly for breathing room
         medal_w = self.medal_icon.get_width()
-        total_width = score_surf.get_width() + gap + medal_w + gap + high_val_surf.get_width()
-        
+
+        # We center the WHOLE block (Score + Medal + Highscore Stack)
+        # The "Highscore Stack" width is whichever is wider: the label or the value
+        stack_width = max(label_surf.get_width(), high_val_surf.get_width())
+        total_width = score_surf.get_width() + gap + medal_w + gap + stack_width
+
+        # Start drawing from this X to ensure the whole group is centered
         current_x = (self.screen_width - total_width) // 2
+
+        # Vertical anchors
         y_center = HUD_HEIGHT // 2
+        y_top_quarter = HUD_HEIGHT // 3      # Top 25% for the "Highscore:" label
+        y_bottom_quarter = (HUD_HEIGHT * 3) // 4  # Bottom 75% for "Name + Value"
 
         # 5. Draw everything
-        # Current Score
+        # A. Current Score (Vertically Centered)
         screen.blit(score_surf, (current_x, y_center - score_surf.get_height() // 2))
         current_x += score_surf.get_width() + gap
-        
-        # Medal
+
+        # B. Medal (Vertically Centered)
         screen.blit(self.medal_icon, (current_x, y_center - medal_w // 2))
         current_x += medal_w + gap
-        
-        # High Score Name + Number (e.g., "AYMEN 256") [cite: 2024-12-19, 2026-02-06]
-        screen.blit(high_val_surf, (current_x, y_center - high_val_surf.get_height() // 2))
+
+        # C. The High Score Stack
+        # Draw the "Highscore:" label in the top half
+        screen.blit(label_surf, (current_x, y_top_quarter - label_surf.get_height() // 2))
+        # Draw the "PLAYER 123" value in the bottom half
+        screen.blit(high_val_surf, (current_x, y_bottom_quarter - high_val_surf.get_height() // 2))
 
         # If paused, draw big "PAUSED" in the center
         if snake.is_paused:
