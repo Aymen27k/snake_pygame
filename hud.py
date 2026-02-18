@@ -92,15 +92,21 @@ class HUD:
                         self.screen_height // 2 - pause_text.get_height() // 2
                     )
                 )
-        for i in range(snake.poison_ammo):
-            # Calculate horizontal spacing
-            icon_x = 30 + (i * 25)
-            icon_y = HUD_HEIGHT // 2
-
-            # Draw a small purple circle or use a sprite if you passed it in
-            pygame.draw.circle(screen, (128, 0, 128), (icon_x, icon_y), 7)
-            # Optional: Add a small white "shine" to the ammo icon
-            pygame.draw.circle(screen, (200, 100, 255), (icon_x - 2, icon_y - 2), 2)
+        if snake.poison_ammo != 0:
+            # Ammo Label
+            ammo_label = self.small_font.render("Ammo:", True, (255, 255, 255))
+            label_x = 30
+            label_y = 10
+            label_y = HUD_HEIGHT // 6
+            screen.blit(ammo_label, (label_x, label_y))
+            for i in range(snake.poison_ammo):
+                # Calculate horizontal spacing
+                icon_x = 30 + (i * 25)
+                icon_y = (HUD_HEIGHT * 3) // 4
+                # Draw a small purple circle or use a sprite if you passed it in
+                pygame.draw.circle(screen, (128, 0, 128), (icon_x, icon_y), 7)
+                # Optional: Add a small white "shine" to the ammo icon
+                pygame.draw.circle(screen, (200, 100, 255), (icon_x - 2, icon_y - 2), 2)
 
         # SpeedMeter
         # In your draw method:

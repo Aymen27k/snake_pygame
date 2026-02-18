@@ -16,14 +16,14 @@ class Background:
         raw_image = pygame.image.load(bg_path).convert()
         self.game_bg = pygame.transform.scale(raw_image, (screen_width, screen_height - hud_height))
 
-        # 2. The Menu Version (Full Height) [cite: 2024-12-19]
+        # 2. The Menu Version (Full Height)
         self.menu_bg = pygame.transform.scale(raw_image, (screen_width, screen_height))
 
 
     def draw(self, is_menu=False):
         if is_menu:
-            # Draw the full-height version at the very top [cite: 2024-12-19]
+            # Draw the full-height version at the very top
             self.screen.blit(self.menu_bg, (0, 0))
         else:
-            # Draw the short version below the HUD [cite: 2024-12-19]
+            # Draw the short version below the HUD
             self.screen.blit(self.game_bg, (0, self.hud_height))

@@ -15,6 +15,9 @@ class SoundManager:
         "boss_dmg": pygame.mixer.Sound(resource_path("assets/sfx/boss_dmg.mp3")),
         "poison_get": pygame.mixer.Sound(resource_path("assets/sfx/poison_get.mp3")),
         "shoot": pygame.mixer.Sound(resource_path("assets/sfx/shoot.mp3")),
+        "browse_menu": pygame.mixer.Sound(resource_path("assets/sfx/browse_menu.mp3")),
+        "menu_selection": pygame.mixer.Sound(resource_path("assets/sfx/menu_selection.mp3")),
+        "sfx_off": pygame.mixer.Sound(resource_path("assets/sfx/sfx_off.mp3")),
         }
     def toggle(self):
         self.enabled = not self.enabled

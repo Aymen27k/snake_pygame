@@ -1,6 +1,6 @@
 {
     "settings": {
-        "music_on": false,
+        "music_on": true,
         "sfx_on": true
     },
     "high_scores": {

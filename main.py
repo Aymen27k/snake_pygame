@@ -40,7 +40,7 @@ pygame.joystick.init()
 joysticks = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
 for joystick in joysticks:
     joystick.init()
-pygame.display.set_caption("Snake Game | Made by AYMEN")
+pygame.display.set_caption("Snake vs Alien | Made by AYMEN")
 clock = pygame.time.Clock()
 player_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT)
 food = Food(SCREEN_WIDTH, SCREEN_HEIGHT, player_snake.segments, HUD_HEIGHT)
@@ -73,6 +73,14 @@ icon_sfx_off = pygame.transform.scale(icon_sfx_off, (35, 35))
 # Main Menu
 def menu(screen, font, player_snake):
     show_htp = False
+    pygame.mouse.set_visible(True)
+
+    # Title image
+    target_width = 400
+    title_image = pygame.image.load(resource_path("assets/snakevsalien_title.png")).convert_alpha()
+    aspect_ratio = title_image.get_height() / title_image.get_width()
+    target_height = int(target_width * aspect_ratio)
+    scaled_title = pygame.transform.scale(title_image, (target_width, target_height))
     options = []
     if player_snake.is_paused:
         options.append("Resume")
@@ -93,14 +101,19 @@ def menu(screen, font, player_snake):
             show_how_to_play(screen, hud.small_font)
         else:
             # Draw title
-            title = font.render("Snake Game Menu", True, (255,255,255))
-            screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 100))
+            title_rect = scaled_title.get_rect(center=(screen.get_width() // 2, 100))
+            screen.blit(scaled_title, title_rect)
+            #title = font.render("Snake Game Menu", True, (255,255,255))
+            #screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 100))
 
             # Draw options
             for i, option in enumerate(options):
-                color = (255,255,0) if i == selected else (255,255,255)
+                color = (255, 255, 0) if i == selected else (255, 255, 255)
                 text = font.render(option, True, color)
-                screen.blit(text, (screen.get_width()//2 - text.get_width()//2, 200 + i*50))
+                
+                # Changed 200 to 350 to start the list lower on the screen
+                # i * 50 keeps the spacing between the lines consistent
+                screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 250 + i * 50))
 
         # Quick Visual Feedback for Toggles
         music_img = icon_music_on if music.enabled else icon_music_off
@@ -125,8 +138,10 @@ def menu(screen, font, player_snake):
                     show_htp = False
             else:
                 if action == "UP":
+                    sounds.play("browse_menu")
                     selected = (selected - 1) % len(options)
                 elif action == "DOWN":
+                    sounds.play("browse_menu")
                     selected = (selected + 1) % len(options)
                 elif action == "TOGGLE_MUSIC":
                     music.toggle()
@@ -134,8 +149,12 @@ def menu(screen, font, player_snake):
                     data_store.update_setting("music_on", music.enabled)
                 elif action == "TOGGLE_SFX":
                     sounds.toggle()
+                    if sounds.enabled:
+                        sounds.play("browse_menu")
                     data_store.update_setting("sfx_on", sounds.enabled)
                 elif action == "CONFIRM":
+                    sounds.play("menu_selection")
+                    pygame.time.delay(150)
 
                     choice = options[selected]
                     if choice == "Resume": return "resume"
@@ -331,8 +350,10 @@ while running:
             if game_state == "playing":
                 music.play("gameplay")
                 # Entry Point (Game reset)
+                pygame.mouse.set_visible(False)
                 reset_game()
             elif game_state == "resume":
+                pygame.mouse.set_visible(False)
                 # Resume existing game
                 if boss_active and alien_boss.boss_alive and not alien_boss.is_dying:
                     music.play("ultra")
@@ -368,8 +389,11 @@ while running:
                     if event.type == pygame.QUIT:
                         playing = False
                         running = False
-                    
+                    if event.type == pygame.WINDOWFOCUSLOST:
+                        if game_state == "playing":
+                            player_snake.is_paused = not player_snake.is_paused
                     # Get our universal action
+
                     action = get_input_action(event)
 
                     if action:
@@ -402,7 +426,7 @@ while running:
                                     player_snake.direction_queue = player_snake.direction_queue[:2]
 
                             # Handle Shooting (Confirm = Space or A button)
-                            elif action == "SHOOT" and player_snake.poison_ammo > 0:
+                            elif action in ["SHOOT", "CONFIRM"] and player_snake.poison_ammo > 0:
                                 new_shot = PoisonProjectile(player_snake.head.x, player_snake.head.y, player_snake.current_direction)
                                 projectiles.append(new_shot)
                                 player_snake.poison_ammo -= 1
