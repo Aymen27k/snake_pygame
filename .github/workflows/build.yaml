@@ -1,8 +1,10 @@
-name: Build Game - Windows and Linux
+name: Build Snake vs Alien - v1.2
 
 on:
   push:
     branches: [main]
+  # This allows you to run the build manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
@@ -28,17 +30,17 @@ jobs:
       - name: Build Windows Version
         if: matrix.os == 'windows-latest'
         run: |
-          pyinstaller --noconsole --onefile --name "Snake_By_Aymen_Win" --icon="assets/icon.ico" --add-data "assets;assets" --add-data "game_data.json;." main.py
+          pyinstaller --noconsole --onefile --name "Snake_vs_Alien_v1.2_Win" --icon="assets/icon.ico" --add-data "assets;assets" --add-data "game_data.json;." main.py
 
       - name: Build Linux Version
         if: matrix.os == 'ubuntu-latest'
         run: |
-          pyinstaller --noconsole --onefile --name "Snake_By_Aymen_Linux" --icon="assets/icon.png" --add-data "assets:assets" --add-data "game_data.json:." main.py
+          pyinstaller --noconsole --onefile --name "Snake_vs_Alien_v1.2_Linux" --icon="assets/icon.png" --add-data "assets:assets" --add-data "game_data.json:." main.py
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: uses/upload-artifact@v4
         with:
-          name: SnakeGame-${{ matrix.os }}
+          name: Snake-vs-Alien-${{ matrix.os }}
           path: |
-            dist/Snake_By_Aymen_Win.exe
-            dist/Snake_By_Aymen_Linux
+            dist/Snake_vs_Alien_v1.2_Win.exe
+            dist/Snake_vs_Alien_v1.2_Linux
