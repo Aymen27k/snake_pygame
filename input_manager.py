@@ -6,7 +6,7 @@ KEYBOARD_CONTROLS = {
     "DOWN": [pygame.K_DOWN, pygame.K_s],
     "LEFT": [pygame.K_LEFT, pygame.K_a],
     "RIGHT": [pygame.K_RIGHT, pygame.K_d],
-    "CONFIRM": [pygame.K_RETURN],
+    "CONFIRM": [pygame.K_RETURN, pygame.K_KP_ENTER],
     "SHOOT" : [pygame.K_SPACE],
     "PAUSE": [pygame.K_p],
     "BACK": [pygame.K_ESCAPE],
@@ -64,14 +64,17 @@ def get_input_action(event):
 
     # 4. Xbox Controller Mappings (Analog Stick)
     elif event.type == pygame.JOYAXISMOTION:
-        joystick = pygame.joystick.Joystick(event.joy)
-        x = joystick.get_axis(0)  # left stick horizontal
-        y = joystick.get_axis(1)  # left stick vertical
+        if event.joy < pygame.joystick.get_count():
+            try:
+                joystick = pygame.joystick.Joystick(event.joy)
+                x = joystick.get_axis(0)  # left stick horizontal
+                y = joystick.get_axis(1)  # left stick vertical
 
-        for action, condition in XBOX_CONTROLS_ANALOG.items():
-            if condition(x, y):
-                return action
-
+                for action, condition in XBOX_CONTROLS_ANALOG.items():
+                    if condition(x, y):
+                        return action
+            except pygame.error:
+                return None
 
         return None
 

@@ -171,7 +171,6 @@ def show_how_to_play(screen, font):
     gutter = 40  # Space between the colon and the key
     y_offset = 100
     # Before you start your text loop:
-    # Create a dark "Siding" like in OpenTTD for the text to sit on
     overlay_width, overlay_height = 450, 480
     overlay_s = pygame.Surface((overlay_width, overlay_height), pygame.SRCALPHA)
     overlay_s.fill((0, 0, 0, 160)) # Black with 160 transparency

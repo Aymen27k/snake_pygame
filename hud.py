@@ -117,7 +117,7 @@ class HUD:
             icon_y = HUD_HEIGHT // 4
 
             if (9 - i) < speed_level:
-                self.thunder_icon.set_alpha(255)  # Earned: Solid [cite: 2024-12-19]
+                self.thunder_icon.set_alpha(255)
             else:
                 self.thunder_icon.set_alpha(50)
                 

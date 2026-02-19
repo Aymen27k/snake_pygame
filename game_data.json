@@ -1,11 +1,11 @@
 {
     "settings": {
-        "music_on": true,
+        "music_on": false,
         "sfx_on": true
     },
     "high_scores": {
         "wrap": {
-            "score": 153,
+            "score": 230,
             "name": "AYMEN"
         },
         "classic": {

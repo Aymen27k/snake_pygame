@@ -25,6 +25,12 @@ class Alien:
         self.is_dying = False
         self.death_alpha = 255
         self.death_timer = 0
+        self.pattern_index = 0
+        self.patterns = [
+            [(0, -1), (0, 1)],          # Pattern 0: Vertical (Up/Down)
+            [(1, 0), (-1, 0)],          # Pattern 1: Horizontal (Left/Right)
+            [(1, 0), (-1, 0), (0, 1), (0, -1)]  # Pattern 2: All 4 (The "Danger" move)
+        ]
 
         # Graphics
         self.image = pygame.image.load(resource_path("assets/alien.png")).convert_alpha()
@@ -69,6 +75,13 @@ class Alien:
         self.hit_cooldown = 500
         self.death_alpha = 255
         self.death_timer = 0
+        self.pattern_index = 0
+        self.patterns = [
+            [(0, -1), (0, 1)],          # Pattern 0: Vertical (Up/Down)
+            [(1, 0), (-1, 0)],          # Pattern 1: Horizontal (Left/Right)
+            [(1, 0), (-1, 0), (0, 1), (0, -1)]  # Pattern 2: All 4 (The "Danger" move)
+        ]
+
 
         # Randomize position
         self.x = random.randrange(0, self.screen_width - self.boss_size, self.block_size)
@@ -81,49 +94,45 @@ class Alien:
 
     def draw(self, screen):
         current_time = pygame.time.get_ticks()
-        # 1. Start with a fresh copy of the image
         temp_image = self.image.copy()
         
-        # --- NEW: THE DEATH SEQUENCE ---
+        # 1. THE DEATH SEQUENCE
         if self.is_dying:
             elapsed = current_time - self.death_timer
-            
-            # Calculate fade: 255 (solid) to 0 (invisible) over 1 second
             alpha = max(0, 255 - int((elapsed / 1000) * 255))
             temp_image.set_alpha(alpha)
-            
-            # Sink effect
             sink_offset = (elapsed / 1000) * (self.boss_size // 2)
             screen.blit(temp_image, (self.rect.x, self.rect.y + sink_offset))
-
-            # FINALLY kill the boss once the animation is done
             if alpha <= 0:
                 self.boss_alive = False
             return True
 
-        # Calculate how long it has been since the last hit
         time_since_hit = current_time - self.last_hit_time
 
-        # --- 2. THE "HURT" STATE (Flashing & Transparency) ---
+        # 2. THE "HURT" STATE (Takes Priority)
         if time_since_hit < self.hit_cooldown:
-            # Ghost effect: Make him semi-transparent (120 is about 47% opacity)
             temp_image.set_alpha(120)
-            
-            # Strobe effect: Toggle Red/White every 100ms
             if (current_time // 100) % 2 == 0:
                 temp_image.fill((255, 255, 255, 255), special_flags=pygame.BLEND_RGBA_MULT)
             else:
                 temp_image.fill((255, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
 
-        # --- 3. THE "SPAWNING" STATE (Only if NOT currently hurt) ---
+        # 3. THE "SPAWNING" STATE
         elif self.is_spawning:
             temp_image.set_alpha(150)
+
+        # 4. NEW: THE "WARNING" STATE (Pattern 2)
+        # If he is about to fire all 4, give him a golden glow
+        elif self.pattern_index == 2:
+            temp_image.set_alpha(255)
+            # Mix a bit of Yellow (255, 255, 150) into the sprite
+            temp_image.fill((255, 255, 150, 255), special_flags=pygame.BLEND_RGBA_MULT)
             
-        # --- 4. THE "NORMAL" STATE ---
+        # 5. THE "NORMAL" STATE
         else:
             temp_image.set_alpha(255)
 
-        # 5. Final render to screen
+        # 6. Final render
         screen.blit(temp_image, self.rect)
 
     def update(self, player_x, player_y):
@@ -202,17 +211,27 @@ class Alien:
 
     def throw_shurikens(self):
         current_time = pygame.time.get_ticks()
-        
-        # 1. The Gatekeeper: Checks if 2 seconds (2000ms) passed
+
+        # 1. Check if the boss is ready to shoot
         if current_time - self.last_shot_time > self.shoot_cooldown:
 
+            # 2. Get the current set of directions from our pattern list
+            current_directions = self.patterns[self.pattern_index]
 
-            directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-            for dx, dy in directions:
-                new_shuriken = shuriken.Shuriken(self.rect.centerx, self.rect.centery, dx, dy, self.shuriken_image)
+            # 3. Spawn the shurikens based on the selected pattern
+            for dx, dy in current_directions:
+                new_shuriken = shuriken.Shuriken(
+                    self.rect.centerx,
+                    self.rect.centery,
+                    dx, dy,
+                    self.shuriken_image
+                )
                 self.shurikens.append(new_shuriken)
 
-            # 3. CRITICAL: Reset the timer so he has to wait another 2 seconds
+            # 4. Cycle to the next pattern (0 -> 1 -> 2 -> back to 0)
+            self.pattern_index = (self.pattern_index + 1) % len(self.patterns)
+
+            # 5. Reset the cooldown timer
             self.last_shot_time = current_time
 
     def update_projectiles(self):
