@@ -274,7 +274,7 @@ def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, count
                 if action == "CONFIRM":
                     player_chose = True
                     continue_game = False
-                elif action == "PAUSE": # Mapping Escape/Start to go back to menu
+                elif action == "BACK":
                     music.play("menu")
                     continue_game = False
                     player_chose = False
