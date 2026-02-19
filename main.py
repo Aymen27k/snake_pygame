@@ -11,6 +11,7 @@ from projectile import PoisonProjectile
 from soundmanager import SoundManager
 from musicmanager import MusicManager
 from data_manager import DataManager
+from input_manager import get_input_action, get_human_key_name, KEYBOARD_CONTROLS
 from path_util import resource_path
 
 #Config
@@ -35,7 +36,11 @@ LAST_SPEED = 10
 #initialize
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Snake Game | Made by AYMEN")
+pygame.joystick.init()
+joysticks = [pygame.joystick.Joystick(i) for i in range(pygame.joystick.get_count())]
+for joystick in joysticks:
+    joystick.init()
+pygame.display.set_caption("Snake vs Alien | Made by AYMEN")
 clock = pygame.time.Clock()
 player_snake = Snake(SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT)
 food = Food(SCREEN_WIDTH, SCREEN_HEIGHT, player_snake.segments, HUD_HEIGHT)
@@ -67,10 +72,19 @@ icon_sfx_off = pygame.transform.scale(icon_sfx_off, (35, 35))
 
 # Main Menu
 def menu(screen, font, player_snake):
+    show_htp = False
+    pygame.mouse.set_visible(True)
+
+    # Title image
+    target_width = 400
+    title_image = pygame.image.load(resource_path("assets/snakevsalien_title.png")).convert_alpha()
+    aspect_ratio = title_image.get_height() / title_image.get_width()
+    target_height = int(target_width * aspect_ratio)
+    scaled_title = pygame.transform.scale(title_image, (target_width, target_height))
     options = []
     if player_snake.is_paused:
         options.append("Resume")
-    options.extend(["Classic Mode (walls kill)", "Wrap-around Mode (teleport)", "Exit"])
+    options.extend(["Classic Mode (walls kill)", "Wrap-around Mode (teleport)","How to Play?", "Exit"])
     selected = 0
     menu_snake.max_snake_length = MENU_SNAKE_MAX_LENGTH
     menu_snake.create_snake()
@@ -82,29 +96,28 @@ def menu(screen, font, player_snake):
         walls.draw(screen, mode="wrap", y_offset=0)
         menu_snake.move_auto(screen)
         walls.check_collision(menu_snake, SCREEN_WIDTH, SCREEN_HEIGHT, mode="wrap", override_hud=0)
+        if show_htp:
+        # Draw your Tutorial Text here
+            show_how_to_play(screen, hud.small_font)
+        else:
+            # Draw title
+            title_rect = scaled_title.get_rect(center=(screen.get_width() // 2, 100))
+            screen.blit(scaled_title, title_rect)
+            #title = font.render("Snake Game Menu", True, (255,255,255))
+            #screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 100))
 
-        # Draw title
-        title = font.render("Snake Game Menu", True, (255,255,255))
-        screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 100))
-
-        # Draw options
-        for i, option in enumerate(options):
-            color = (255,255,0) if i == selected else (255,255,255)
-            text = font.render(option, True, color)
-            screen.blit(text, (screen.get_width()//2 - text.get_width()//2, 200 + i*50))
+            # Draw options
+            for i, option in enumerate(options):
+                color = (255, 255, 0) if i == selected else (255, 255, 255)
+                text = font.render(option, True, color)
+                
+                # Changed 200 to 350 to start the list lower on the screen
+                # i * 50 keeps the spacing between the lines consistent
+                screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 250 + i * 50))
 
         # Quick Visual Feedback for Toggles
         music_img = icon_music_on if music.enabled else icon_music_off
         sfx_img = icon_sfx_on if sounds.enabled else icon_sfx_off
-        music_status = "ON" if music.enabled else "OFF"
-        sfx_status = "ON" if sounds.enabled else "OFF"
-
-        #music_text = font.render(f"Music (M): {music_status}", True, (239, 255, 0))
-        #sfx_text = font.render(f"SFX (S): {sfx_status}", True, (239, 255, 0))
-
-        # Textual Music/Sound toggle UI
-        #screen.blit(music_text, (20, SCREEN_HEIGHT - 90))
-        #screen.blit(sfx_text, (20, SCREEN_HEIGHT - 50))
 
         # Draw them in the bottom corner
         screen.blit(music_img, (20, SCREEN_HEIGHT - 60))
@@ -116,29 +129,71 @@ def menu(screen, font, player_snake):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return "exit"
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    selected = (selected - 1) % len(options)
-                elif event.key == pygame.K_DOWN:
-                    selected = (selected + 1) % len(options)
-                elif event.key == pygame.K_m:
-                    music.toggle()
-                    music.play("menu")  # Forces the "Radio" to check the new state
-                    data_store.update_setting("music_on", music.enabled)
-                elif event.key == pygame.K_s:
-                    sounds.toggle()
-                    data_store.update_setting("sfx_on", sounds.enabled)
-                elif event.key == pygame.K_RETURN:
-                    choice = options[selected]
-                    if choice == "Resume":
-                        return "resume"
-                    elif choice.startswith("Classic"):
-                        return "classic"
-                    elif choice.startswith("Wrap"):
-                        return "wrap"
-                    else:
-                        return "exit"
 
+            # Use the universal translator
+            action = get_input_action(event)
+            if show_htp:
+                # If tutorial is open, ANY key or back button closes it
+                if action in ["CONFIRM", "BACK"] or event.type == pygame.KEYDOWN:
+                    show_htp = False
+            else:
+                if action == "UP":
+                    sounds.play("browse_menu")
+                    selected = (selected - 1) % len(options)
+                elif action == "DOWN":
+                    sounds.play("browse_menu")
+                    selected = (selected + 1) % len(options)
+                elif action == "TOGGLE_MUSIC":
+                    music.toggle()
+                    music.play("menu")
+                    data_store.update_setting("music_on", music.enabled)
+                elif action == "TOGGLE_SFX":
+                    sounds.toggle()
+                    if sounds.enabled:
+                        sounds.play("browse_menu")
+                    data_store.update_setting("sfx_on", sounds.enabled)
+                elif action == "CONFIRM":
+                    sounds.play("menu_selection")
+                    pygame.time.delay(150)
+
+                    choice = options[selected]
+                    if choice == "Resume": return "resume"
+                    elif choice.startswith("Classic"): return "classic"
+                    elif choice.startswith("Wrap"): return "wrap"
+                    elif choice.startswith("How"):
+                        show_htp = True
+                    else: return "exit"
+
+def show_how_to_play(screen, font):
+    """Handles all the 'dirty' blitting work in one place."""
+    # Inside your show_how_to_play function
+    center_x = screen.get_width() // 2
+    gutter = 40  # Space between the colon and the key
+    y_offset = 100
+    # Before you start your text loop:
+    overlay_width, overlay_height = 450, 480
+    overlay_s = pygame.Surface((overlay_width, overlay_height), pygame.SRCALPHA)
+    overlay_s.fill((0, 0, 0, 160)) # Black with 160 transparency
+    overlay_rect = overlay_s.get_rect(center=(screen.get_width()//2, screen.get_height()//2))
+
+    screen.blit(overlay_s, overlay_rect.topleft)
+
+    for action, keys in KEYBOARD_CONTROLS.items():
+        # 1. Prepare the text
+        clean_action = action.replace("_", " ").title() + ":"
+        nice_key = get_human_key_name(pygame.key.name(keys[0]))
+
+        # 2. Render
+        action_surf = font.render(clean_action, True, (255, 255, 255)) # Greyish
+        key_surf = font.render(nice_key, True, (255, 255, 0))          # Yellow pop!
+
+        # 3. Blit with alignment
+        # Action ends at center_x - gutter
+        screen.blit(action_surf, (center_x - action_surf.get_width() - gutter, y_offset))
+        # Key starts at center_x + gutter
+        screen.blit(key_surf, (center_x + gutter, y_offset))
+
+        y_offset += 45
 
 # Continue Screen
 def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, countdown_time=10):
@@ -201,25 +256,28 @@ def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, count
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
+
             if typing:
+                # 1. High Score Typing Logic (Keyboard Only)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN and len(player_name) > 0:
                         typing = False
                         data_store.update_high_score(game_mode, hud.score, player_name)
                     elif event.key == pygame.K_BACKSPACE:
                         player_name = player_name[:-1]
-                    else:
-                        if len(player_name) < 8 and event.unicode.isalnum():
-                            player_name += event.unicode.upper()
+                    elif len(player_name) < 8 and event.unicode.isalnum():
+                        player_name += event.unicode.upper()
             else:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:  # player continues
-                        player_chose = True
-                        continue_game = False
-                    elif event.key == pygame.K_ESCAPE:
-                        music.play("menu")
-                        continue_game = False
-                        player_chose = False
+                # 2. Use the Universal Action Manager (Menu/Selection Mode)
+                action = get_input_action(event)
+
+                if action == "CONFIRM":
+                    player_chose = True
+                    continue_game = False
+                elif action == "BACK":
+                    music.play("menu")
+                    continue_game = False
+                    player_chose = False
 
         if remaining <= 0:
             continue_game = False
@@ -287,13 +345,14 @@ while running:
             break
         elif menu_choice == "resume":
             game_state = "resume"
-
         if game_state in ("playing", "resume"):
             if game_state == "playing":
                 music.play("gameplay")
                 # Entry Point (Game reset)
+                pygame.mouse.set_visible(False)
                 reset_game()
             elif game_state == "resume":
+                pygame.mouse.set_visible(False)
                 # Resume existing game
                 if boss_active and alien_boss.boss_alive and not alien_boss.is_dying:
                     music.play("ultra")
@@ -325,43 +384,49 @@ while running:
                     music.play("ultra")
                 else:
                     music.play("gameplay")
-                # 1. Handle input/events
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         playing = False
                         running = False
-                    if event.type == pygame.KEYDOWN:
-                        # 1. These keys should ALWAYS work (Pause/Exit)
-                        if event.key == pygame.K_p:
+                    if event.type == pygame.WINDOWFOCUSLOST:
+                        if game_state == "playing":
+                            player_snake.is_paused = not player_snake.is_paused
+                    # Get our universal action
+
+                    action = get_input_action(event)
+
+                    if action:
+                        # 1. Global Actions (Work even if paused, like Unpausing)
+                        if action == "PAUSE":
                             player_snake.is_paused = not player_snake.is_paused
                             if player_snake.is_paused:
-                                # Just entered pause: record the "start" of the pause
                                 pause_start_tick = pygame.time.get_ticks()
                             else:
-                                # Just exited pause: calculate duration and add to buffer
                                 pause_duration = pygame.time.get_ticks() - pause_start_tick
                                 total_paused_time += pause_duration
-                        elif event.key == pygame.K_ESCAPE:
-                            if not player_snake.is_paused:
-                                player_snake.is_paused = True
-                                game_state = "menu"
-                                playing = False
+                        elif action == "BACK":
+                            player_snake.is_paused = True
+                            game_state = "menu"
+                            playing = False
 
-                        # 2. Only update direction if NOT paused
+                        # 2. Only handle movement/combat if NOT paused
                         if not player_snake.is_paused:
-                            last_planned = player_snake.direction_queue[-1] if player_snake.direction_queue else player_snake.current_direction
-                            if event.key == pygame.K_UP and last_planned != "DOWN":
-                                player_snake.direction_queue.append("UP")
-                            elif event.key == pygame.K_DOWN and last_planned != "UP":
-                                player_snake.direction_queue.append("DOWN")
-                            elif event.key == pygame.K_LEFT and last_planned != "RIGHT":
-                                player_snake.direction_queue.append("LEFT")
-                            elif event.key == pygame.K_RIGHT and last_planned != "LEFT":
-                                player_snake.direction_queue.append("RIGHT")
-                            player_snake.direction_queue = player_snake.direction_queue[:2]
-                            if event.key == pygame.K_SPACE and player_snake.poison_ammo > 0:
-                                # Create a new shot at the snake's head position
-                                new_shot = PoisonProjectile(player_snake.head.x, player_snake.head.y, last_planned)
+                            # Handle Directions
+                            if action in ["UP", "DOWN", "LEFT", "RIGHT"]:
+                                last_planned = player_snake.direction_queue[-1] if player_snake.direction_queue else player_snake.current_direction
+
+                                # Check for 180-degree turn prevention
+                                if (action == "UP" and last_planned != "DOWN") or \
+                                (action == "DOWN" and last_planned != "UP") or \
+                                (action == "LEFT" and last_planned != "RIGHT") or \
+                                (action == "RIGHT" and last_planned != "LEFT"):
+
+                                    player_snake.direction_queue.append(action)
+                                    player_snake.direction_queue = player_snake.direction_queue[:2]
+
+                            # Handle Shooting (Confirm = Space or A button)
+                            elif action in ["SHOOT", "CONFIRM"] and player_snake.poison_ammo > 0:
+                                new_shot = PoisonProjectile(player_snake.head.x, player_snake.head.y, player_snake.current_direction)
                                 projectiles.append(new_shot)
                                 player_snake.poison_ammo -= 1
                                 sounds.play("shoot")
@@ -394,6 +459,8 @@ while running:
                 if boss_active:
                     boss_hitbox = alien_boss.rect.inflate(-30, -30)
                     current_time = pygame.time.get_ticks() # Use this for everything!
+                    if alien_boss.is_spawning and joysticks:
+                        joysticks[0].rumble(0.5, 0.5, 150)
 
                     # Poison food logic
                     if not food.poison_active:
@@ -425,7 +492,6 @@ while running:
                         else:
                             pass
 
-                    # This must be indented at the same level as "if boss_active"
                     if alien_boss.is_dying:
                         if pygame.time.get_ticks() - alien_boss.death_timer > 2000:
                             boss_active = False

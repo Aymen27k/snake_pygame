@@ -134,7 +134,7 @@ class Food:
             if self.poison_active:
                 time_left = self.duration - (pygame.time.get_ticks() - self.spawn_time)
                 
-                # Simple logic: only draw if not in the "off" part of a blink [cite: 2024-12-19]
+                # Simple logic: only draw if not in the "off" part of a blink
                 should_draw = True
                 if time_left < 2000 and (pygame.time.get_ticks() % 400 < 200):
                     should_draw = False
