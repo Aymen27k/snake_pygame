@@ -1,29 +1,38 @@
-# 🐍 Snake Pygame
+# 🛸 Snake vs Alien (v1.2)
 
-**A dynamic snake game built from scratch using Pygame — featuring fluid controls, adaptive music, and evolving boss encounters.**  
-Crafted solo by [Aymen27k](https://github.com/Aymen27k), this project marks the journey of a game designer.
-
----
-
-## 🎮 Features
-
-- **Fluid controls**: Input buffering with a command queue for precise U‑turns and high‑speed play.
-- **Boss stability**: Milestones fixed to trigger reliably, even during death animations.
-- **Modular architecture**: Classes for snake, food, scoreboard, walls, music, and sound.
-- **Dynamic menu**: A roaming snake with randomized growth and fade‑in music.
-- **Adaptive difficulty**: Speed scales with score, capped at 20.
-- **Tense music trigger**: At score 30, soundtrack shifts to an intense track.
-- **Sound effects**: Eating, speeding up, and game over events are sonically marked.
-- **Highscore tracking**: Stored locally in `game_data.json`.
-- **Sprite integration**: Custom visuals for snake, food, and environment.
-- **Automated CI/CD**: Cross-platform binaries (Windows/Linux) automatically built via GitHub Actions.
+**A high-octane evolution of the classic Snake, featuring tactical boss combat, haptic feedback, and cross-platform polish.** Crafted solo by [Aymen27k](https://github.com/Aymen27k).
 
 ---
 
-## 📦 Releases
+## 🎮 New in v1.2: "The Patterns & Polish Update"
 
-Download binaries directly from the [Releases page](https://github.com/Aymen27k/snake_pygame/releases/tag/v1.1).  
-Latest: **v1.1 — Fluid Controls & Boss Stability Update**
+- **🎮 Full Controller Support**: Plug-and-play compatibility with Xbox and Analog controllers, featuring hot-swap stability.
+- **📳 Haptic Immersion**: Integrated controller rumble during boss spawns and major events to heighten tension.
+- **🐍 Dynamic menu**: A roaming snake with randomized growth and fade‑in music.
+- **🧠 Intelligent Boss AI**: Alien encounters now feature predictable, telegraphable attack patterns (Vertical, Horizontal, and 4-way Bursts).
+- **🟡 Visual Telegraphing**: Bosses glow golden before dangerous attacks, allowing for skill-based dodging.
+- **🍎 Sprite integration**: Custom visuals for snake, food, and environment.
+- **🔊 Enhanced Soundscape**: New menu SFX, selection audio, and independent Mute toggles for music/SFX.
+
+---
+
+## 🚀 Quick Start (Play Now!)
+
+Don't want to run the code? Download the standalone binaries for your OS:
+- **[Download for Windows (.exe)](https://github.com/Aymen27k/Snake_pygame/releases/latest)**
+- **[Download for Linux](https://github.com/Aymen27k/Snake_pygame/releases/latest)**
+
+---
+
+## 🛠️ Technical Engineering
+
+- **Fluid Controls**: Input buffering with a command queue for precise U-turns.
+- **Modular Architecture**: Decoupled classes for Snake logic, Boss AI, Scoreboard, and Audio Management.
+- **Automated CI/CD**: Parallel Windows/Linux builds triggered via GitHub Actions (.yml).
+- **Persistent Data**: Local high-score and settings tracking via `game_data.json`.
+- **Dynamic Difficulty**: Real-time speed scaling and adaptive music triggers based on player performance.
+
+---
 
 ## 🚀 Installation
 
@@ -64,6 +73,7 @@ snake_pygame/
 ├── main.py                  # Game loop and state manager
 ├── constants.py             # Global constants
 ├── data_manager.py          # Handles save/load operations
+├── input_manager.py         # Handles translation of inputs into actions
 ├── hud.py                   # Heads-up display elements
 ├── background.py            # Background rendering
 ├── food.py                  # Food logic
