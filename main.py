@@ -258,13 +258,19 @@ def continue_screen(screen, font, is_new_high_score, time_str, boss_kills, count
                 return False
 
             if typing:
-                # 1. High Score Typing Logic (Keyboard Only)
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN and len(player_name) > 0:
-                        typing = False
-                        data_store.update_high_score(game_mode, hud.score, player_name)
-                    elif event.key == pygame.K_BACKSPACE:
+                    # 1. Use the manager ONLY to see if we should submit
+                    if get_input_action(event) == "CONFIRM":
+                        if len(player_name) > 0:
+                            typing = False
+                            data_store.update_high_score(game_mode, hud.score, player_name)
+                        continue # Move to next event
+
+                    # 2. Handle Backspace directly
+                    if event.key == pygame.K_BACKSPACE:
                         player_name = player_name[:-1]
+
+                    # 3. Handle characters directly (Bypassing the manager entirely)
                     elif len(player_name) < 8 and event.unicode.isalnum():
                         player_name += event.unicode.upper()
             else:
@@ -390,7 +396,7 @@ while running:
                         running = False
                     if event.type == pygame.WINDOWFOCUSLOST:
                         if game_state == "playing":
-                            player_snake.is_paused = not player_snake.is_paused
+                            player_snake.is_paused = True
                     # Get our universal action
 
                     action = get_input_action(event)
@@ -458,7 +464,7 @@ while running:
                 # Fighting the Alien Boss
                 if boss_active:
                     boss_hitbox = alien_boss.rect.inflate(-30, -30)
-                    current_time = pygame.time.get_ticks() # Use this for everything!
+                    current_time = pygame.time.get_ticks()
                     if alien_boss.is_spawning and joysticks:
                         joysticks[0].rumble(0.5, 0.5, 150)
 
@@ -499,6 +505,8 @@ while running:
                             alien_boss.intro_triggered = False
                             alien_boss.boss_alive = False
                             alien_boss.shurikens.clear()
+                            food.poison_active = False
+                            food.poison_rect.topleft = (-100, -100)
                             projectiles.clear()
                             alien_boss.reset(boss_killed) # Important to reset for next wave!
                     #print(f"VICTORY! The Alien has retreated!")
